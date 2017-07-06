@@ -10,6 +10,18 @@ module.exports = function (grunt) {
 
   grunt.initConfig({
 
+    cssmin: {
+      target: {
+        files: [{
+          expand: true,
+          cwd: "css",
+          src: ["*.css", "!*.min.css"],
+          dest: "css",
+          ext: ".min.css"
+        }]
+      }
+    },
+
     sass: {
       dist: {
         files: {
@@ -21,7 +33,7 @@ module.exports = function (grunt) {
     watch: {
       css: {
         files: "**/*.scss",
-        tasks: ["sass"]
+        tasks: ["css"]
       }
     },
 
@@ -59,10 +71,12 @@ module.exports = function (grunt) {
 
   });
 
+  grunt.loadNpmTasks("grunt-contrib-cssmin");
   grunt.loadNpmTasks("grunt-contrib-sass");
   grunt.loadNpmTasks("grunt-contrib-watch");
   grunt.loadNpmTasks("grunt-git");
 
+  grunt.registerTask("css", ["sass", "cssmin"]);
   grunt.registerTask("git", ["gitadd", "gitcommit", "gitpush"]);
   grunt.registerTask("default", ["watch"]);
   
