@@ -1,0 +1,24 @@
+$pin-sprite: "http://www.sjsu.edu/socialsciences/pics/buttons/pin_sprite_817x136.png";
+$pin-width: 21px;
+$pin-height: 34px;
+$pin-selectors: (".pin-0",".pin-1",".pin-2",".pin-3",".pin-4",".pin-5",".pin-6",".pin-7",".pin-8",".pin-9",".pin-a",".pin-b",".pin-c",".pin-d",".pin-e",".pin-f",".pin-g",".pin-h",".pin-i",".pin-j",".pin-k",".pin-l",".pin-m",".pin-n",".pin-o",".pin-p",".pin-q",".pin-r",".pin-s",".pin-t",".pin-u",".pin-v",".pin-w",".pin-x",".pin-y",".pin-z",".pin");
+
+#{$pin-selectors} {
+    background: url(#{$pin-sprite}) no-repeat;
+    width: $pin-width;
+    height: $pin-height;
+}
+
+$y: $pin-height * -1;
+$y-on: 0px;
+$y-hover: $pin-height * -3;
+$y-on-hover: $pin-height * -2;
+@for $i from 1 through length($pin-selectors) {
+    $selector: nth($pin-selectors, $i);
+    $x: $pin-width * (1 - $i);
+    
+    #{$selector} { background-position: $x $y; }
+    #{$selector}.on { background-position: $x $y-on; }
+    #{$selector}.hover { background-position: $x $y-hover; }
+    #{$selector}.on.hover { background-position: $x $y-on-hover; }
+}

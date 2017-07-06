@@ -1,0 +1,85 @@
+@import "color";
+@import "fonts";
+@import "sizes";
+@import "block";
+@import "util";
+@import "pin";
+@import "space";
+@import "banner";
+@import "doc_index";
+@import "homepagequicklinks";
+
+hr {
+    margin: $gutter 0;
+    border-style: solid;
+    border-color: $light-gray;
+    border-width: 1px 0 0;
+}
+
+.col-1 #content .left .blog-feed h3 {
+    margin: $small 0;
+    color: $medium-gray;
+    font-style: italic;
+}
+
+figure {
+	margin: 0;
+	padding: 0;
+
+    figcaption {
+        margin: 0;
+        padding: 0;
+
+        p {
+            margin: $small 0 0;
+	        text-align: center;
+        }
+    }
+
+    img {
+        vertical-align: bottom;
+        margin: 0;
+        padding: 0;
+    }
+}
+
+.outline {
+	border: 1px solid $gray;
+}
+
+/* Backwards Compatibility */
+
+.left-tiny-gutter {
+	@extend .float-left;
+	margin-right: $small;
+}
+
+p.pinfloat { @extend .left-tiny-gutter; }
+
+.left-header th { text-align: left; }
+.left-header td { padding-left: $large; }
+
+.infoWindow {
+	width: 176px;
+	margin: 0;
+	padding: 0;
+}
+
+.sjsumap {
+	@extend .wd-460 ;
+	height: 520px;
+	background-color: $proud-beige;
+}
+.sjsumap .loadmsg {
+	text-align: center;
+	line-height: 2;
+	font-size: 200%;
+}
+
+.highlight-frame{
+	@include border-radius(15px);
+	background-color: #e8f6fd;
+	border: solid 1px $proud-blue;
+	padding: $large $large $small $large;
+	margin: 0 0 $large 0;
+}

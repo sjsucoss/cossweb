@@ -1,0 +1,53 @@
+.nowrap {
+	overflow: hidden;
+	*overflow: visible;
+	zoom: 1;
+}
+
+.float-left { float: left; }
+.float-right { float: right; }
+
+.clear { clear: both; }
+
+.wd-180 { width: 180px; }
+.wd-206 { width: 206px; }
+.wd-220 { width: 220px; }
+.wd-250 { width: 250px; }
+.wd-320 { width: 320px; }
+.wd-460 { width: 460px; }
+.wd-660 { width: 660px; }
+
+.third-of-page { @extend .wd-206; }
+.half-of-page { @extend .wd-320; }
+.whole-page { @extend .wd-660; }
+
+/*
+.top-gutter { margin-top: $gutter; }
+.bottom-gutter { margin-bottom: $gutter; }
+*/
+.left-gutter { margin-left: $gutter; }
+.right-gutter { margin-right: $gutter; }
+
+.centered {
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* Backwards Compatibility */
+
+.no-wrap-block { @extend .nowrap }
+
+.col-180 { @extend .wd-180; }
+.col-220 { @extend .wd-220; }
+.third-col { @extend .wd-206; }
+.half-col { @extend .wd-320; }
+
+.left-with-gutter {
+	@extend .float-left;
+	@extend .right-gutter;
+}
+
+.right-with-gutter {
+	@extend .float-right;
+	@extend .left-gutter;
+}

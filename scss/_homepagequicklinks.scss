@@ -1,0 +1,11 @@
+.homepagequicklinks {
+    @extend .wd-660;
+
+    li {
+        font-size:80%;
+
+        &:last-child a {
+            padding-right: 0;
+        }
+    }
+}
