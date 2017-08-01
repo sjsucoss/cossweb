@@ -23,8 +23,8 @@ hr {
 }
 
 figure {
-	margin: 0;
-	padding: 0;
+    margin: 0;
+    padding: 0;
 
     figcaption {
         margin: 0;
@@ -32,7 +32,7 @@ figure {
 
         p {
             margin: $small 0 0;
-	        text-align: center;
+            text-align: center;
         }
     }
 
@@ -44,14 +44,14 @@ figure {
 }
 
 .outline {
-	border: 1px solid $gray;
+    border: 1px solid $gray;
 }
 
 /* Backwards Compatibility */
 
 .left-tiny-gutter {
-	@extend .float-left;
-	margin-right: $small;
+    @extend .float-left;
+    margin-right: $small;
 }
 
 p.pinfloat { @extend .left-tiny-gutter; }
@@ -60,26 +60,26 @@ p.pinfloat { @extend .left-tiny-gutter; }
 .left-header td { padding-left: $large; }
 
 .infoWindow {
-	width: 176px;
-	margin: 0;
-	padding: 0;
+    width: 176px;
+    margin: 0;
+    padding: 0;
 }
 
 .sjsumap {
-	@extend .wd-460 ;
-	height: 520px;
-	background-color: $proud-beige;
+    @extend .wd-460 ;
+    height: 520px;
+    background-color: $proud-beige;
 }
 .sjsumap .loadmsg {
-	text-align: center;
-	line-height: 2;
-	font-size: 200%;
+    text-align: center;
+    line-height: 2;
+    font-size: 200%;
 }
 
 .highlight-frame{
-	@include border-radius(15px);
-	background-color: #e8f6fd;
-	border: solid 1px $proud-blue;
-	padding: $large $large $small $large;
-	margin: 0 0 $large 0;
+    @include border-radius(15px);
+    background-color: #e8f6fd;
+    border: solid 1px $proud-blue;
+    padding: $large $large $small $large;
+    margin: 0 0 $large 0;
 }

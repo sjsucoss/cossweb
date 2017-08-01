@@ -1,3 +1,6 @@
 # scss
 **/*.css.map
 **/.sass-cache
+
+# dist
+dist/**/*.html
