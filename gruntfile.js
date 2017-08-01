@@ -7,5 +7,7 @@ module.exports = function (grunt) {
 
   grunt.registerTask("default", ["clean", "css", "htmlbuild"]);
   
+  grunt.registerTask("image", ["clean", "imagemin"]);
+
 };
 
