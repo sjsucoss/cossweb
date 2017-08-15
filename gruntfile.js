@@ -5,7 +5,7 @@ module.exports = function (grunt) {
 
   // grunt.registerTask("default", ["watch"]);
 
-  grunt.registerTask("default", ["clean", "css", "htmlbuild"]);
+  grunt.registerTask("default", ["clean", "css"]);
   
   grunt.registerTask("image", ["clean", "imagemin"]);
 
