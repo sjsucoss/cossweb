@@ -2,6 +2,7 @@
 **/*.css.map
 **/.sass-cache
 
+css/**/*
 dist/**/*
 pages/**/*
 pics/**/*
