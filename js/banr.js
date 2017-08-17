@@ -46,13 +46,11 @@ CoSS.banr = (function (my, window) {
 
     //--------------------------------------------------------------------------
 
-    function each(collection, fn, context) {
-        context = context || null;
+    function each(collection, callback) {
+        var i = 0, limit = collection.length;
 
-        var limit = collection.length, i;
-
-        for (i = 0; i < limit; i += 1) {
-            if (fn.call(context, collection[i], i, collection) === false) {
+        for (; i < limit; i += 1) {
+            if (callback(collection[i], i, collection) === false) {
                 break;
             }
         }
@@ -60,34 +58,34 @@ CoSS.banr = (function (my, window) {
         return collection;
     }
 
-    function filter(collection, fn, context) {
+    function filter(collection, callback) {
         var value = [];
 
         each(collection, function(item, i, collection) {
-            if (fn.call(this, item, i, collection)) {
+            if (callback(item, i, collection)) {
                 value.push(item);
             }
-        }, context);
+        });
         
         return value;
     }
 
-	function all(collection, fn, context) {
+	function all(collection, callback) {
 		var value = true;
 
 		each(collection, function(item, i, collection) {
-			value = !!fn.call(this, item, i, collection);
+			value = !!callback(item, i, collection);
 			return value;
-		}, context);
+		});
 
 		return value;
 	}
 
 
-	function some(collection, fn, context) {
+	function some(collection, callback) {
 		return !all(collection, function(item, i, collection) {
-			return !fn.call(this, item, i, collection);
-		}, context);
+			return !callback(item, i, collection);
+		});
 	}
 
     //--------------------------------------------------------------------------
@@ -268,11 +266,11 @@ CoSS.banr = (function (my, window) {
 
     //--------------------------------------------------------------------------
 
-    my.listener = function (element, type, fn) {
+    my.listener = function (element, type, callback) {
         if (element.addEventListener) {
-            element.addEventListener(type, fn, false);
+            element.addEventListener(type, callback, false);
         } else if (element.attachEvent) {
-            element.attachEvent("on" + type, fn);
+            element.attachEvent("on" + type, callback);
         } // otherwise, just forget about it
     };
 

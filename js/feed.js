@@ -1,10 +1,12 @@
-var CoSS = (function (my, YUI, window) {
+var CoSS = this.CoSS || {};
+
+CoSS.feed = (function (my, YUI, window) {
     "use strict";
 
     var MAX_ENTRIES = 5,
         MAX_WORDS = 30;
 
-    my.feed = function (id, url, maxEntries, maxWords) {
+    my.setup = function (id, url, maxEntries, maxWords) {
         maxEntries = typeof maxEntries === "number" ? maxEntries : MAX_ENTRIES;
         maxWords = typeof maxWords === "number" ? maxWords : MAX_WORDS;
 
@@ -53,4 +55,4 @@ var CoSS = (function (my, YUI, window) {
 
     return my;
 
-}(this.CoSS || {}, this.YUI, this));
+}(CoSS.feed || {}, this.YUI, this));
