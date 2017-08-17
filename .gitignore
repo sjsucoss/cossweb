@@ -2,6 +2,6 @@
 **/*.css.map
 **/.sass-cache
 
-# folders
 dist/**/*
+pages/**/*
 pics/**/*
