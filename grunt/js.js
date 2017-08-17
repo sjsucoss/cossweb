@@ -20,13 +20,13 @@ module.exports = function (grunt) {
       }]
     },
     options: {
-      sourceMap: true
+      sourceMap: false
     }
   });
 
   grunt.loadNpmTasks("grunt-contrib-jshint");
   grunt.loadNpmTasks("grunt-contrib-uglify");
 
-  grunt.registerTask("js", ["jshint", "uglify"]);
+  grunt.registerTask("js", ["jshint", "clean:js", "uglify"]);
 
 };

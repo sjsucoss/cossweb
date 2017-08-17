@@ -16,5 +16,7 @@ module.exports = function (grunt) {
   });
 
   grunt.loadNpmTasks("grunt-contrib-imagemin");
+  
+  grunt.registerTask("pics", ["clean:pics", "imagemin"]);
 
 };

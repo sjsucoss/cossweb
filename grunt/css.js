@@ -28,6 +28,6 @@ module.exports = function (grunt) {
   grunt.loadNpmTasks("grunt-contrib-sass");
   grunt.loadNpmTasks("grunt-contrib-cssmin");
 
-  grunt.registerTask("css", ["sass", "cssmin"]);
+  grunt.registerTask("css", ["clean:sass", "sass", "clean:css", "cssmin"]);
 
 };
