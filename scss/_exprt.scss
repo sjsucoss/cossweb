@@ -1,0 +1,49 @@
+#expertise-menu .dependents {
+    font-size: 87.5%;
+}
+
+.response {
+    padding-top: $medium;
+    border-top-style: dotted;
+    border-top-width: 1px;
+
+    &.less {
+        & .expertise, & .less {
+            display: none;
+        }
+        .more {
+            display: inline;
+        }
+    }
+
+    .more {
+        display: none;
+    }
+
+    .highlight {
+        color: $blue;
+        //font-family: $serif;
+        //font-style: italic;
+        font-weight: bold;
+    }
+
+    a:link, a:visited {
+        color: $black;
+        text-decoration: none;
+    }
+
+    a:active, a:hover {
+        color: $blue;
+        text-decoration: underline;
+    }
+
+    .expertise {
+    	margin: $medium 0;
+        font-size: 87.5%;
+
+        ul {
+        	margin-left: $large;
+            list-style-type: square;
+        }
+    }
+}

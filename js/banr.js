@@ -81,7 +81,6 @@ CoSS.banr = (function (my, window) {
 		return value;
 	}
 
-
 	function some(collection, callback) {
 		return !all(collection, function(item, i, collection) {
 			return !callback(item, i, collection);
