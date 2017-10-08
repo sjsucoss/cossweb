@@ -1091,13 +1091,24 @@ CoSS.exprt = (function (my, window) {
     MainMenuItem.prototype = new MenuItem();
 
     MainMenuItem.prototype.setChecked = function (value) {
+        var event;
+
         MenuItem.prototype.setChecked.call(this, value);
 
         if (window.document.createEventObject) {
             this.checkbox.fireEvent("onchange");
         } else {
-            this.checkbox.dispatchEvent(new Event("change"));
+            try {
+                event = new Event("change");
+            }
+            catch (error) {
+                event = window.document.createEvent("Events");
+                event.initEvent("change", false, true);
+            }
+            
+            this.checkbox.dispatchEvent(event);
         }
+
     };
 
     //==========================================================================
