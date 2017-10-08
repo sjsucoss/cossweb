@@ -919,46 +919,73 @@ CoSS.exprt = (function (my, window) {
     //==========================================================================
 
     function Controller(xmlDocument) {
-        var search = bind(function () {
-                this.responses.hide();
-                this.menu.show();
-            }, this),
+        var backButton =
+                window.document.getElementById("expertise-back-button"),
+            forwardButton =
+                window.document.getElementById("expertise-forward-button"),
             apply = bind(function() {
-                var properties = this.menu.hide().properties();
-
-                this.backwards.unshift(properties);
-                this.responses.insert(properties).show();
+                this.back.push(this.current);
+                show(backButton);
+                this.forward = [];
+                hide(forwardButton);
+                this.current = this.menu.hide().properties();
+                this.responses.populate(this.current).show();
             }, this),
             clear = bind(function() {
                 this.menu.clear();
             }, this),
             cancel = bind(function() {
-                this.menu.hide().populate(this.backwards[0]);
+                this.menu.hide().populate(this.current);
                 this.responses.show();
+            }, this),
+            search = bind(function () {
+                this.responses.hide();
+                this.menu.show();
+            }, this),
+            back = bind(function() {
+                this.forward.push(this.current);
+                show(forwardButton);
+                this.current = this.back.pop();
+                (this.back.length ? show : hide)(backButton);
+                this.responses.populate(this.current);
+                this.menu.populate(this.current);
+            }, this),
+            forward = bind(function() {
+                this.back.push(this.current);
+                show(backButton);
+                this.current = this.forward.pop();
+                (this.forward.length ? show : hide)(forwardButton);
+                this.responses.populate(this.current);
+                this.menu.populate(this.current);
             }, this);
 
         this.menu = new Menu();
         this.responses = new Responses(xmlDocument);
 
         each(window.document.getElementsByTagName("button"), function (button) {
-            if (hasClass(button, "expertise-search")) {
-                listener(button, "click", search);
-            } else if (hasClass(button, "expertise-apply")) {
+            if (hasClass(button, "expertise-apply")) {
                 listener(button, "click", apply);
             } else if (hasClass(button, "expertise-clear")) {
                 listener(button, "click", clear);
             } else if (hasClass(button, "expertise-cancel")) {
                 listener(button, "click", cancel);
+            } else if (hasClass(button, "expertise-search")) {
+                listener(button, "click", search);
+            } else if (hasClass(button, "expertise-back")) {
+                listener(button, "click", back);
+            } else if (hasClass(button, "expertise-forward")) {
+                listener(button, "click", forward);
             }
         });
 
     }
 
-    Controller.prototype.setup = function () {
-        this.backwards = [alwaysTrue];
-        this.forewards = [];
-        this.menu.hide().populate(alwaysTrue);
-        this.responses.insert(alwaysTrue).show();
+    Controller.prototype.initialize = function () {
+        this.current = alwaysTrue;
+        this.back = [];
+        this.forward = [];
+        this.menu.hide().populate(this.current);
+        this.responses.populate(this.current).show();
     };
 
     //==========================================================================
@@ -1122,7 +1149,7 @@ CoSS.exprt = (function (my, window) {
         return this;
     };
 
-    Responses.prototype.insert = (function () {
+    Responses.prototype.populate = (function () {
         function empty(properties) {
             return contains(alwaysTrue, properties);
         }
@@ -1220,12 +1247,16 @@ CoSS.exprt = (function (my, window) {
     Response.prototype.xmlResponseProperties = (function () {
         var ELEMENT = 1;
 
+        function elements(nodes) {
+            return filter(nodes, function(node) {
+                return node.nodeType === ELEMENT;
+            });
+        }
+
         function keyValuePairs(node, callback, context) {
-            each(node.childNodes, function (child) {
-                if (child.nodeType === ELEMENT) {
-                    callback.call(this, child.nodeName,
-                        child.textContent || child.innerText);
-                }
+            each(elements(node.childNodes), function (child) {
+                callback.call(this, child.nodeName,
+                    child.textContent || child.innerText);
             }, context);
         }
 
@@ -1322,18 +1353,12 @@ CoSS.exprt = (function (my, window) {
     };
 
     Response.prototype.moreLessBlock = function () {
-        var value = "";
-
-        if (this.expertise) {
-            value += '<div class="float-right">' +
-                '<button id="more-' + this.id +
-                    '" class="more">SHOW MORE</button>' +
-                '<button id="less-' + this.id +
-                    '" class="less">SHOW LESS</button>' +
-                "</div>";
-        }
-    
-        return value;    
+        return this.expertise ?
+            '<div class="float-right">' +
+            '<button id="more-' + this.id + '" class="more">SHOW MORE</button>' +
+            '<button id="less-' + this.id + '" class="less">SHOW LESS</button>' +
+            "</div>" :
+            "";
     };
 
     Response.prototype.expertiseBlock = (function () {
@@ -1375,7 +1400,7 @@ CoSS.exprt = (function (my, window) {
 
     my.setup = function (url) {
         xml(url, function (xmlDocument) {
-            (new Controller(xmlDocument)).setup();
+            (new Controller(xmlDocument)).initialize();
         });
     };
 
