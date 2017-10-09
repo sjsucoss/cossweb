@@ -1095,20 +1095,20 @@ CoSS.exprt = (function (my, window) {
 
         MenuItem.prototype.setChecked.call(this, value);
 
-        if (window.document.createEventObject) {
-            this.checkbox.fireEvent("onchange");
-        } else {
-            try {
+        if (window.document.createEvent) {
+            try {  // preferred method
                 event = new Event("change");
-            }
-            catch (error) {
-                event = window.document.createEvent("Events");
+            } catch (error) {  // depricated, but works in IE
+                event = window.document.createEvent("HTMLEvents");
                 event.initEvent("change", false, true);
             }
-            
-            this.checkbox.dispatchEvent(event);
-        }
 
+            this.checkbox.dispatchEvent(event);
+        } else {  // IE before version 9
+            event = window.document.createEventObject();
+
+            this.checkbox.fireEvent("onchange", event);
+        }
     };
 
     //==========================================================================
