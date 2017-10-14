@@ -1057,7 +1057,7 @@ CoSS.exprt = (function (my, window) {
                 this.responses.populate(this.current).show();
             }, this),
             cancelListener = bind(function() {
-                this.menu.hide()// .populate(this.current);
+                this.menu.hide(); // .populate(this.current);
                 this.responses.show();
             }, this),
             searchListener = bind(function () {
