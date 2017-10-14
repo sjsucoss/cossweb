@@ -4,8 +4,8 @@
 
 .response {
     padding-top: $medium;
-    border-top-style: dotted;
-    border-top-width: 1px;
+    border-bottom-style: dotted;
+    border-bottom-width: 1px;
 
     &.less {
         & .expertise, & .less {
@@ -47,3 +47,22 @@
         }
     }
 }
+
+#expertise-responses-summary {
+    background-color: $light-blue;
+    padding: $small $medium;
+}
+
+
+// expertise-search
+// expertise-back
+// expertise-forward
+// expertise-responses-help
+
+// expertise-responses
+// expertise-back-button
+// expertise-forward-button
+// expertise-responses-help
+// expertise-responses-summary
+// expertise-responses-matches
+

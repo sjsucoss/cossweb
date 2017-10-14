@@ -845,6 +845,39 @@ CoSS.exprt = (function (my, window) {
     }
 
     //--------------------------------------------------------------------------
+    //                 A Datum to Aid in Name Alphabetization
+    //--------------------------------------------------------------------------
+
+    function alphabetizer(name) {
+        var pattern = /^(.+?) ((?:(?:de(?: la)?|dei|del|della|des|di|du|la|le|les|lo|van(?: de(?:n|r))?|von) )?\S+)$/,
+            match = pattern.exec(trim(name).toLowerCase());
+
+        if (!match) {
+            throw new Error("Could not parse name: " + name);
+        }
+
+        return [match[2].replace(/\s/g, "")].concat(match[1].split(" "));
+    }
+
+    function alphabetizerCompare(alphabetizer1, alphabetizer2) {
+        var length1 = alphabetizer1.length,
+            length2 = alphabetizer2.length,
+            i;
+
+        for (i = 0; i < length1 && i < length2; i += 1) {
+            if (alphabetizer1[i] < alphabetizer2[i]) {
+                return -1;
+            }
+
+            if (alphabetizer1[i] > alphabetizer2[i]) {
+                return 1;
+            }
+        }
+
+        return length1 - length2;
+    }
+
+    //--------------------------------------------------------------------------
     //                            DOM Node Classes
     //--------------------------------------------------------------------------
 
@@ -992,7 +1025,7 @@ CoSS.exprt = (function (my, window) {
     KeyView.prototype = new View();
 
     KeyView.prototype.showIff = function (properties) {
-        var value = !!properties[this.key];
+        var value = properties[this.key];
 
         View.prototype.showIff.call(this, value);
         return value;
@@ -1057,7 +1090,7 @@ CoSS.exprt = (function (my, window) {
                 this.responses.populate(this.current).show();
             }, this),
             cancelListener = bind(function() {
-                this.menu.hide(); // .populate(this.current);
+                this.menu.hide();
                 this.responses.show();
             }, this),
             searchListener = bind(function () {
@@ -1068,13 +1101,11 @@ CoSS.exprt = (function (my, window) {
                 this.forward.push(this.current);
                 this.current = this.back.pop();
                 this.responses.populate(this.current);
-                // this.menu.populate(this.current);
             }, this),
             forwardListener = bind(function() {
                 this.back.push(this.current);
                 this.current = this.forward.pop();
                 this.responses.populate(this.current);
-                // this.menu.populate(this.current);
             }, this);
 
         buttons(function (button) {
@@ -1365,17 +1396,82 @@ CoSS.exprt = (function (my, window) {
     //==========================================================================
 
     function Response(xmlResponse) {
-        this.xmlResponseProperties(xmlResponse);
-        this.extensionProperties();
-        this.names = this.comparisonNames();
+        var ELEMENT = 1;
+
+        // Collect element nodes, ignoring useless nodes.
+        function elements(nodes) {
+            return filter(nodes, function(node) {
+                return node.nodeType === ELEMENT;
+            });
+        }
+
+        // Go through the element children of node. Each such child will have an
+        // XML form along the following lines:
+        //
+        // <key>value</key>
+        //
+        // For each such XML node, invoke the callback on the strings "key" and
+        // "value".
+        function keyValuePairs(node, callback, context) {
+            each(elements(node.childNodes), function (child) {
+                callback.call(this, child.nodeName,
+                    child.textContent || child.innerText);  // innerText for IE
+            }, context);
+        }
+
+        // Change values into integers where possible.
+        function parseValue(string) {
+            return /^\-?\d+$/.test(string) ? parseInt(string, 10) : string;
+        }
+
+        // Add key-value pairs specified in xmlResponse:
+        keyValuePairs(xmlResponse, function (qualtricsKey, value) {
+            // Translate random Qualtrics keys into meaningful keys.
+            var key = toKey[qualtricsKey];
+
+            // Test key and value. If toKey does not provide a translation--
+            // i.e. key is undefined and falsy--we are not interested in that
+            // key-value pair. If value is "", which is falsy, then the
+            // corresponding node in xmlResponse was empty and does not need to
+            // be carried over. Test value before parsing! "0" is truthy, but 0
+            // is falsy!
+            if (key && value) {
+                this[key] = parseValue(value);
+            }
+        }, this);
+
+        // Extend the set of key-value pairs:
+        // The keys in the range of toKey fall into thematic groups, and these
+        // groups form the range of toDependents. The domain of toDependents is
+        // a set of "thematic" keys representing the overarching themes of those
+        // thematic groups. For each thematic key in toDependents, add that key
+        // with a value of 1, if there is a key from the corresponding thematic
+        // group--the "dependents"--that wound up with a truthy value as a
+        // result of the loop above. Thus, logically, the thematic key
+        // represents the disjunction of the dependents. If any thematic key
+        // turns out to get the value 1, add the the key expertise with value 1.
+        // Logically, the expertise key represents the disjunction of the
+        // thematic keys.
+        each(toDependents, function(dependents, key1) {
+            if (some(dependents, function (key2) {
+                    return this[key2];
+                }, this)) {
+                this[key1] = 1;
+                this.expertise = 1;
+            }
+        }, this);
+
+        // Add an alphabetiser based on the name which will have been provided
+        // in the xmlResponse and stored as this.name by the first loop above.
+        this.alphabetizer = alphabetizer(this.name);
     }
 
     Response.prototype.getName = function () {
-        return trim((this.name || "&nbsp;"));
+        return trim(this.name || "&nbsp;");
     };
 
     Response.prototype.getEmail = function () {
-        return trim((this.email || "&nbsp;").toLowerCase());
+        return trim(this.email || "&nbsp;").toLowerCase();
     };
 
     Response.prototype.getRank = function () {
@@ -1424,78 +1520,8 @@ CoSS.exprt = (function (my, window) {
         return trim(this.departmentText || "&nbsp;");
     };
 
-    Response.prototype.xmlResponseProperties = (function () {
-        var ELEMENT = 1;
-
-        function elements(nodes) {
-            return filter(nodes, function(node) {
-                return node.nodeType === ELEMENT;
-            });
-        }
-
-        function keyValuePairs(node, callback, context) {
-            each(elements(node.childNodes), function (child) {
-                callback.call(this, child.nodeName,
-                    child.textContent || child.innerText);
-            }, context);
-        }
-
-        function parse(string) {
-            return /^\-?\d+$/.test(string) ? parseInt(string, 10) : string;
-        }
-
-        return function (xmlResponse) {
-            keyValuePairs(xmlResponse, function (qualtricsKey, value) {
-                var key = toKey[qualtricsKey];
-
-                if (key && value) {
-                    this[key] = parse(value);
-                }
-            }, this);
-        };
-    }());
-
-    Response.prototype.extensionProperties = function () {
-        each(toDependents, function(dependents, key1) {
-            if (some(dependents, function (key2) {
-                    return this[key2];
-                }, this)) {
-                this[key1] = 1;
-                this.expertise = 1;
-            }
-        }, this);
-    };
-
-    Response.prototype.comparisonNames = function () {
-        var pattern = /^(.+?) ((?:(?:de(?: la)?|dei|del|della|des|di|du|la|le|les|lo|van(?: de(?:n|r))?|von) )?\S+)$/,
-            name = this.getName(),
-            match = pattern.exec(name.toLowerCase());
-
-        if (!match) {
-            throw new Error("Could not parse name: " + name);
-        }
-
-        return [match[2].replace(/\s/g, "")].concat(match[1].split(" "));
-    };
-
     Response.prototype.compare = function (other) {
-        var names1 = this.names,
-            names2 = other.names,
-            length1 = names1.length,
-            length2 = names2.length,
-            i;
-
-        for (i = 0; i < length1 && i < length2; i += 1) {
-            if (names1[i] < names2[i]) {
-                return -1;
-            }
-
-            if (names1[i] > names2[i]) {
-                return 1;
-            }
-        }
-
-        return length1 - length2;
+        return alphabetizerCompare(this.alphabetizer, other.alphabetizer);
     };
 
     Response.prototype.contains = function(properties) {
