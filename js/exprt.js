@@ -1051,29 +1051,30 @@ CoSS.exprt = (function (my, window) {
 
         var applyListener = bind(function() {
                 this.back.push(this.current);
+                this.back.concat(this.forward);
                 this.forward.clear();
                 this.current = this.menu.hide().properties();
                 this.responses.populate(this.current).show();
             }, this),
             cancelListener = bind(function() {
-                this.menu.hide().populate(this.current);
+                this.menu.hide()// .populate(this.current);
                 this.responses.show();
             }, this),
             searchListener = bind(function () {
                 this.responses.hide();
-                this.menu.show();
+                this.menu.clear().show();
             }, this),
             backListener = bind(function() {
                 this.forward.push(this.current);
                 this.current = this.back.pop();
                 this.responses.populate(this.current);
-                this.menu.populate(this.current);
+                // this.menu.populate(this.current);
             }, this),
             forwardListener = bind(function() {
                 this.back.push(this.current);
                 this.current = this.forward.pop();
                 this.responses.populate(this.current);
-                this.menu.populate(this.current);
+                // this.menu.populate(this.current);
             }, this);
 
         buttons(function (button) {
@@ -1237,7 +1238,6 @@ CoSS.exprt = (function (my, window) {
 
     function MainMenuItem(key, dependents) {
         MenuItem.call(this, key);
-
         this.dependents = dependents;
         this.subcontainer = new View(key + "Dependents");
 
@@ -1337,6 +1337,7 @@ CoSS.exprt = (function (my, window) {
                 return new KeyView(key + "Item", key);
             });
         }
+
         GroupView.call(this, id,
             reduce(toDependents, function (list, dependents, key) {
                 return list.concat([complex(key, dependents)]);
