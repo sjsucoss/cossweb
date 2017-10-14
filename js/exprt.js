@@ -13,7 +13,8 @@ var CoSS = this.CoSS || {};
 CoSS.exprt = (function (my, window) {
     "use strict";
 
-    var toKey = {
+    var document = window.document,
+        toKey = {
             ResponseID: "id",
 
             Q2: "email",
@@ -804,6 +805,10 @@ CoSS.exprt = (function (my, window) {
         }, context);
     }
 
+    function buttons(callback, context) {
+        each(document.getElementsByTagName("button"), callback, context);
+    }
+
     //--------------------------------------------------------------------------
     //                          Object Manipulation
     //--------------------------------------------------------------------------
@@ -814,7 +819,6 @@ CoSS.exprt = (function (my, window) {
                 target[key] = value;
             });
         });
-
         return target;
     }
 
@@ -822,6 +826,12 @@ CoSS.exprt = (function (my, window) {
         return all(contained, function (value, key) {
             return container[key] === value;
         });
+    }
+
+    function keys(object) {
+        return reduce(object, function(accumulator, ignore, key) {
+            return accumulator.concat([key]);
+        }, []);
     }
 
     //--------------------------------------------------------------------------
@@ -870,14 +880,6 @@ CoSS.exprt = (function (my, window) {
         setClasses(element, classes);
     }
 
-    function hide(element) {
-        addClass(element, "hide");
-    }
-
-    function show(element) {
-        removeClass(element, "hide");
-    }
-
     //--------------------------------------------------------------------------
     //                                 Events
     //--------------------------------------------------------------------------
@@ -915,207 +917,360 @@ CoSS.exprt = (function (my, window) {
     }
 
     //==========================================================================
+    //                                  VIEW
+    //==========================================================================
+
+    function View(id) {
+        if (arguments.length > 0) {
+            this.element = document.getElementById(id);
+        }
+    }
+
+    View.prototype.hide = function () {
+        addClass(this.element, "hide");
+        return this;
+    };
+
+    View.prototype.show = function () {
+        removeClass(this.element, "hide");
+        return this;
+    };
+
+    View.prototype.hidden = function () {
+        return hasClass(this.element, "hide");
+    };
+
+    View.prototype.showIff = function (condition) {
+        return condition ? this.show() : this.hide();
+    };
+
+    View.prototype.toggle = function () {
+        return this.showIff(this.hidden());
+    };
+
+    View.prototype.fill = function (html) {
+        this.element.innerHTML = html;
+        return this;
+    };
+
+    View.prototype.listener = function (type, callback) {
+        listener(this.element, type, callback);
+        return this;
+    };
+
+
+    View.prototype.dispatch = function (type, interface) {
+        interface = interface || "Events";
+
+        var event;
+
+        if (this.element.dispatchEvent) {
+            try {  // preferred method
+                event = new Event(type);
+            } catch (error) {  // deprecated, but works in IE 9+
+                event = document.createEvent(interface);
+                event.initEvent(type, false, true);
+            }
+            this.element.dispatchEvent(event);
+        } else {  // IE before version 9
+            event = document.createEventObject();
+            this.element.fireEvent("on" + type, event);
+        }
+    };
+
+    //==========================================================================
+    //                                KEY VIEW
+    //==========================================================================
+
+    function KeyView(id, key) {
+        if (arguments.length > 0) {
+            View.call(this, id);
+            this.key = key;
+        }
+    }
+
+    KeyView.prototype = new View();
+
+    KeyView.prototype.showIff = function (properties) {
+        var value = !!properties[this.key];
+
+        View.prototype.showIff.call(this, value);
+        return value;
+    };
+
+    //==========================================================================
+    //                               GROUP VIEW
+    //==========================================================================
+
+    function GroupView(id, children) {
+        if (arguments.length > 0) {
+            View.call(this, id);
+            this.children = children;
+        }
+    }
+
+    GroupView.prototype = new View();
+
+    GroupView.prototype.showIff = function (properties) {
+        var value = reduce(this.children, function (exists, child) {
+                return child.showIff(properties) || exists;
+            }, false);
+
+        View.prototype.showIff.call(this, value);
+        return value;
+    };
+
+    //==========================================================================
+    //                              COMPLEX VIEW
+    //==========================================================================
+
+    function ComplexView(id, key, group) {
+        if (arguments.length > 0) {
+            KeyView.call(this, id, key);
+            this.group = group;
+        }
+    }
+
+    ComplexView.prototype = new KeyView();
+
+    ComplexView.prototype.showIff = function (properties) {
+        var value = this.group.showIff(properties);
+
+        return KeyView.prototype.showIff.call(this, properties) || value;
+    };
+
+    //==========================================================================
     //                               CONTROLLER
     //==========================================================================
 
     function Controller(xmlDocument) {
-        var backButton =
-                window.document.getElementById("expertise-back-button"),
-            forwardButton =
-                window.document.getElementById("expertise-forward-button"),
-            apply = bind(function() {
+        this.menu = new Menu("expertise-menu");
+        this.responses = new Responses(xmlDocument, "expertise-responses");
+        this.back = new NavigatorButton("expertise-back-button");
+        this.forward = new NavigatorButton("expertise-forward-button");
+
+        var applyListener = bind(function() {
                 this.back.push(this.current);
-                show(backButton);
-                this.forward = [];
-                hide(forwardButton);
+                this.forward.clear();
                 this.current = this.menu.hide().properties();
                 this.responses.populate(this.current).show();
             }, this),
-            clear = bind(function() {
-                this.menu.clear();
-            }, this),
-            cancel = bind(function() {
+            cancelListener = bind(function() {
                 this.menu.hide().populate(this.current);
                 this.responses.show();
             }, this),
-            search = bind(function () {
+            searchListener = bind(function () {
                 this.responses.hide();
                 this.menu.show();
             }, this),
-            back = bind(function() {
+            backListener = bind(function() {
                 this.forward.push(this.current);
-                show(forwardButton);
                 this.current = this.back.pop();
-                (this.back.length ? show : hide)(backButton);
                 this.responses.populate(this.current);
                 this.menu.populate(this.current);
             }, this),
-            forward = bind(function() {
+            forwardListener = bind(function() {
                 this.back.push(this.current);
-                show(backButton);
                 this.current = this.forward.pop();
-                (this.forward.length ? show : hide)(forwardButton);
                 this.responses.populate(this.current);
                 this.menu.populate(this.current);
             }, this);
 
-        this.menu = new Menu();
-        this.responses = new Responses(xmlDocument);
-
-        each(window.document.getElementsByTagName("button"), function (button) {
+        buttons(function (button) {
             if (hasClass(button, "expertise-apply")) {
-                listener(button, "click", apply);
-            } else if (hasClass(button, "expertise-clear")) {
-                listener(button, "click", clear);
+                listener(button, "click", applyListener);
             } else if (hasClass(button, "expertise-cancel")) {
-                listener(button, "click", cancel);
+                listener(button, "click", cancelListener);
             } else if (hasClass(button, "expertise-search")) {
-                listener(button, "click", search);
+                listener(button, "click", searchListener);
             } else if (hasClass(button, "expertise-back")) {
-                listener(button, "click", back);
+                listener(button, "click", backListener);
             } else if (hasClass(button, "expertise-forward")) {
-                listener(button, "click", forward);
+                listener(button, "click", forwardListener);
             }
         });
-
     }
 
     Controller.prototype.initialize = function () {
-        this.current = alwaysTrue;
-        this.back = [];
-        this.forward = [];
-        this.menu.hide().populate(this.current);
+        this.current = this.menu.hide().clear().properties();
+        this.back.clear();
+        this.forward.clear();
         this.responses.populate(this.current).show();
+    };
+
+    //==========================================================================
+    //                            NAVIGATOR BUTTON
+    //==========================================================================
+
+    function NavigatorButton(id) {
+        View.call(this, id);
+        this.stack = [];
+    }
+
+    NavigatorButton.prototype = new View();
+
+    NavigatorButton.prototype.push = function (datum) {
+        this.stack.push(datum);
+        return this.adjust();
+    };
+
+    NavigatorButton.prototype.pop = function () {
+        var datum = this.stack.pop();
+
+        this.adjust();
+        return datum;
+    };
+
+    NavigatorButton.prototype.concat = function (other) {
+        this.stack = this.stack.concat(other.stack);
+        return this.adjust();
+    };
+
+    NavigatorButton.prototype.clear = function () {
+        this.stack = [];
+        return this.adjust();
+    };
+
+    NavigatorButton.prototype.adjust = function () {
+        var length = this.stack.length;
+
+        this.showIff(length > 0);
+        return length;
     };
 
     //==========================================================================
     //                                  MENU
     //==========================================================================
 
-    function Menu() {
+    function Menu(id) {
+        View.call(this, id);
+        this.items = new MenuItems();
+        this.help = new View("expertise-menu-help");
 
-        this.items = {};
-
-        each(toDependents, function (dependents, key1) {
-            each(dependents, function (key2) {
-                this.items[key2] = new MenuItem(key2);
+        var clearListener = bind(function() {
+                this.clear();
+            }, this),
+            helpListener = bind(function () {
+                this.help.toggle();
             }, this);
 
-            this.items[key1] =
-                new MainMenuItem(key1, map(dependents, function (key2) {
-                    return this.items[key2];
-                }, this));
-        }, this);
-
-        this.container = window.document.getElementById("expertise-menu");
+        buttons(function (button) {
+            if (hasClass(button, "expertise-menu-clear")) {
+                listener(button, "click", clearListener);
+            } else if (hasClass(button, "expertise-menu-help")) {
+                listener(button, "click", helpListener);
+            }
+        });
     }
 
+    Menu.prototype = new View();
+
     Menu.prototype.hide = function () {
-        hide(this.container);
-        return this;
+        this.help.hide();
+        return View.prototype.hide.call(this);
     };
 
-    Menu.prototype.show = function () {
-        show(this.container);
+    Menu.prototype.populate = function (properties) {
+        this.items.populate(properties);
         return this;
     };
 
     Menu.prototype.clear = function () {
-        each(this.items, function(item) {
-            item.setChecked(false);
-        });
-        return this;
-    };
-
-    Menu.prototype.populate = function (properties) {
-        each(this.items, function(item, key) {
-            item.setChecked(properties[key]);
-        });
-        return this;
+        return this.populate(alwaysTrue);
     };
 
     Menu.prototype.properties = function () {
-        var value = {};
-
-        each(this.items, function (item, key) {
-            if (item.getChecked()) {
-                value[key] = 1;
-            }
-        });
-
-        return extend(value, alwaysTrue);
+        return extend(this.items.properties(), alwaysTrue);
     };
 
     //==========================================================================
     //                               MENU ITEMS
     //==========================================================================
 
-    function MenuItem(key) {
-        if (arguments.length) {
-            this.checkbox = window.document.getElementById(key + "Checkbox");
-        }
+    function MenuItems() {
+        each(toDependents, function (dependents, key1) {
+            this[key1] =
+                new MainMenuItem(key1, map(dependents, function (key2) {
+                    this[key2] = new MenuItem(key2);
+                    return this[key2];
+                }, this));
+        }, this);
     }
 
-    MenuItem.prototype.getChecked = function () {
-        return this.checkbox.checked;
+    MenuItems.prototype.populate = function (properties) {
+        each(this, function(item, key) {
+            item.setChecked(properties[key]);
+        });
     };
 
-    MenuItem.prototype.setChecked = function (value) {
-        this.checkbox.checked = !!value;
+    MenuItems.prototype.properties = function () {
+        return map(filter(this, function (item) {
+            return item.getChecked();
+        }), function (item) {
+            return 1;
+        });
     };
 
     //==========================================================================
-    //                            MAIN MENU ITEMS                            
+    //                               MENU ITEM
+    //==========================================================================
+
+    function MenuItem(key) {
+        if (arguments.length > 0) {
+            View.call(this, key + "Checkbox");
+        }
+    }
+
+    MenuItem.prototype = new View();
+
+    MenuItem.prototype.getChecked = function () {
+        return this.element.checked;
+    };
+
+    MenuItem.prototype.setChecked = function (value) {
+        this.element.checked = !!value;
+    };
+
+    //==========================================================================
+    //                             MAIN MENU ITEM
     //==========================================================================
 
     function MainMenuItem(key, dependents) {
         MenuItem.call(this, key);
 
         this.dependents = dependents;
+        this.subcontainer = new View(key + "Dependents");
 
-        this.subcontainer = window.document.getElementById(key + "Dependents");
-
-        listener(this.checkbox, "change", bind(function () {
+        this.listener("change", bind(function () {
             var value = this.getChecked();
 
+            this.subcontainer.showIff(value);
             if (!value) {
                 each(this.dependents, function (item) {
                     item.setChecked(false);
                 });
             }
-
-            (value ? show : hide)(this.subcontainer);
         }, this));
     }
 
     MainMenuItem.prototype = new MenuItem();
 
     MainMenuItem.prototype.setChecked = function (value) {
-        var event;
-
         MenuItem.prototype.setChecked.call(this, value);
-
-        if (window.document.createEvent) {
-            try {  // preferred method
-                event = new Event("change");
-            } catch (error) {  // depricated, but works in IE
-                event = window.document.createEvent("HTMLEvents");
-                event.initEvent("change", false, true);
-            }
-
-            this.checkbox.dispatchEvent(event);
-        } else {  // IE before version 9
-            event = window.document.createEventObject();
-
-            this.checkbox.fireEvent("onchange", event);
-        }
+        this.dispatch("change");
     };
 
     //==========================================================================
     //                                RESPONSES
     //==========================================================================
 
-    function Responses(xmlDocument) {
+    function Responses(xmlDocument, id) {
+        View.call(this, id);
+        this.help = new View("expertise-responses-help");
+        this.container = new View("expertise-responses-container");
+        this.summary = new Summary("expertise-responses-summary");
+        this.matches = new Matches("expertise-responses-matches");
+
         this.responses = map(xmlDocument.getElementsByTagName("Response"),
             function (xmlResponse) {
                 return new Response(xmlResponse);
@@ -1123,61 +1278,34 @@ CoSS.exprt = (function (my, window) {
                 return response1.compare(response2);
             });
 
-        this.main = window.document.getElementById("expertise-main");
+        var helpListener = bind(function () {
+                this.help.toggle();
+            }, this);
 
-        this.matches = window.document.getElementById("expertise-matches");
-
-        this.container = window.document.getElementById("expertise-responses");
-
-        listener(this.container, "click", moreLessListener);
-    }
-
-    function moreLessListener(event) {
-        event = event || window.event;
-
-        var target = event.target || event.srcElement, match, div;
-
-        if (target && target.id) {
-            match = /^(more|less)\-(.+?)$/.exec(target.id);
-
-            if (match) {
-                div = window.document.getElementById(match[2]);
-
-                if (div) {
-                    (match[1] === "more" ? removeClass : addClass)(div, "less");
-                }
+        buttons(function (button) {
+            if (hasClass(button, "expertise-responses-help")) {
+                listener(button, "click", helpListener);
             }
-        }
+        });
+
+        this.container.listener("click", moreLessListener);
     }
+
+    Responses.prototype = new View();
 
     Responses.prototype.hide = function () {
-        hide(this.main);
-        return this;
+        this.help.hide();
+        return View.prototype.hide.call(this);
     };
 
-    Responses.prototype.show = function () {
-        show(this.main);
+    Responses.prototype.populate = function (properties) {
+        var responses = this.filter(properties);
+
+        this.matches.update(responses.length);
+        this.summary.showIff(properties);
+        this.container.fill(this.html(responses));
         return this;
     };
-
-    Responses.prototype.populate = (function () {
-        function empty(properties) {
-            return contains(alwaysTrue, properties);
-        }
-
-        function matches(n, properties) {
-            return empty(properties) ? "&nbsp;" :
-                "" + n + " match" + (n === 1 ? "" : "es");
-        }
-
-        return function (properties) {
-            var responses = this.filter(properties);
-
-            this.matches.innerHTML = matches(responses.length, properties);
-            this.container.innerHTML = this.html(responses);
-            return this;
-        };
-    }());
 
     Responses.prototype.filter = function (properties) {
         return filter(this.responses, function (response) {
@@ -1189,6 +1317,46 @@ CoSS.exprt = (function (my, window) {
         return reduce(responses, function (accumulator, response) {
             return accumulator + response.html();
         }, "");
+    };
+
+    //==========================================================================
+    //                                SUMMARY
+    //==========================================================================
+
+    function Summary(id) {
+        function complex(key, dependents) {
+            return new ComplexView(key + "Item", key, group(key, dependents));
+        }
+
+        function group(key, dependents) {
+            return new GroupView(key + "Sublist", children(dependents));
+        }
+
+        function children(keys) {
+            return map(keys, function (key) {
+                return new KeyView(key + "Item", key);
+            });
+        }
+        GroupView.call(this, id,
+            reduce(toDependents, function (list, dependents, key) {
+                return list.concat([complex(key, dependents)]);
+            }, []));
+    }
+
+    Summary.prototype = new GroupView();
+
+    //==========================================================================
+    //                                MATCHES
+    //==========================================================================
+
+    function Matches(id) {
+        View.call(this, id);
+    }
+
+    Matches.prototype = new View();
+
+    Matches.prototype.update = function (n) {
+        this.fill("" + n + " match" + (n === 1 ? "" : "es"));
     };
 
     //==========================================================================
@@ -1404,6 +1572,24 @@ CoSS.exprt = (function (my, window) {
                 "";
         };
     }());
+
+    function moreLessListener(event) {
+        event = event || window.event;
+
+        var target = event.target || event.srcElement, match, div;
+
+        if (target && target.id) {
+            match = /^(more|less)\-(.+?)$/.exec(target.id);
+
+            if (match) {
+                div = document.getElementById(match[2]);
+
+                if (div) {
+                    (match[1] === "more" ? removeClass : addClass)(div, "less");
+                }
+            }
+        }
+    }
 
     //==========================================================================
     //                                 EXPOSED
