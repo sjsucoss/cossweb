@@ -36,21 +36,57 @@
         color: $blue;
         text-decoration: underline;
     }
+}
 
-    .expertise {
-    	margin: $medium 0;
-        font-size: 87.5%;
+.expertise,
+.expertise-help,
+.expertise-summary {
+    margin: $medium 0;
+    font-size: 87.5%;
 
-        ul {
-        	margin-left: $large;
-            list-style-type: square;
-        }
+    p {
+        margin: $small 0;
+    }
+
+    ul {
+        list-style-type: square;
     }
 }
 
-#expertise-responses-summary {
+.expertise,
+.expertise-summary {
+    ul {
+        margin: 0 0 0 $large;
+    }
+}
+
+.expertise-help,
+.expertise-summary {
+    @include border-radius(15px);
+}
+
+.expertise-help {
+    padding: $large;
+    background-color: $blue;
+    color: $white;
+
+    p, h2, h3, h4 {
+        color: $white;
+    }
+
+    ul {
+        margin: 0;
+    }
+}
+
+.expertise-summary {
+    padding: $medium $large;
     background-color: $light-blue;
-    padding: $small $medium;
+    color: $blue;
+
+    p, h2, h3, h4 {
+        color: $blue;
+    }
 }
 
 

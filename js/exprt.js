@@ -805,8 +805,25 @@ CoSS.exprt = (function (my, window) {
         }, context);
     }
 
-    function buttons(callback, context) {
-        each(document.getElementsByTagName("button"), callback, context);
+    function findIf(collection, callback, context) {
+        var value; // === undefined
+
+        each(collection, function (item, x, collection) {
+            if (callback.call(this, item, x, collection)) {
+                value = item;
+                return false;
+            }
+        }, context);
+        return value;
+    }
+
+    function associate(collection, callback, context) {
+        var value = {};
+
+        each(collection, function (item, x, collection) {
+            value[item] = callback.call(this, item, x, collection);
+        }, context);
+        return value;
     }
 
     //--------------------------------------------------------------------------
@@ -1077,12 +1094,20 @@ CoSS.exprt = (function (my, window) {
     //==========================================================================
 
     function Controller(xmlDocument) {
-        this.menu = new Menu("expertise-menu");
-        this.responses = new Responses(xmlDocument, "expertise-responses");
-        this.back = new NavigatorButton("expertise-back-button");
-        this.forward = new NavigatorButton("expertise-forward-button");
-
-        var applyListener = bind(function() {
+        var classes = [
+                "expertise-apply",
+                "expertise-cancel",
+                "expertise-search",
+                "expertise-back",
+                "expertise-forward",
+                "expertise-menu-clear",
+                "expertise-menu-help",
+                "expertise-responses-help"
+            ],
+            toButtons = associate(classes, function() {
+                return [];
+            }),
+            applyListener = bind(function() {
                 this.back.push(this.current);
                 this.back.concat(this.forward);
                 this.forward.clear();
@@ -1108,18 +1133,36 @@ CoSS.exprt = (function (my, window) {
                 this.responses.populate(this.current);
             }, this);
 
-        buttons(function (button) {
-            if (hasClass(button, "expertise-apply")) {
-                listener(button, "click", applyListener);
-            } else if (hasClass(button, "expertise-cancel")) {
-                listener(button, "click", cancelListener);
-            } else if (hasClass(button, "expertise-search")) {
-                listener(button, "click", searchListener);
-            } else if (hasClass(button, "expertise-back")) {
-                listener(button, "click", backListener);
-            } else if (hasClass(button, "expertise-forward")) {
-                listener(button, "click", forwardListener);
+        each(document.getElementsByTagName("button"), function (button) {
+            var key = findIf(classes, function (name) {
+                    return hasClass(button, name);
+                });
+
+            if (key) {
+                toButtons[key].push(button);
             }
+        });
+
+        this.back = new NavigatorButton("expertise-back-button");
+        this.forward = new NavigatorButton("expertise-forward-button");
+        this.menu = new Menu("expertise-menu", toButtons);
+        this.responses = new Responses(
+            xmlDocument, "expertise-responses", toButtons);
+
+        each(toButtons["expertise-apply"], function (button) {
+            listener(button, "click", applyListener);
+        });
+        each(toButtons["expertise-cancel"], function (button) {
+            listener(button, "click", cancelListener);
+        });
+        each(toButtons["expertise-search"], function (button) {
+            listener(button, "click", searchListener);
+        });
+        each(toButtons["expertise-back"], function (button) {
+            listener(button, "click", backListener);
+        });
+        each(toButtons["expertise-forward"], function (button) {
+            listener(button, "click", forwardListener);
         });
     }
 
@@ -1127,7 +1170,7 @@ CoSS.exprt = (function (my, window) {
         this.current = this.menu.hide().clear().properties();
         this.back.clear();
         this.forward.clear();
-        this.responses.populate(this.current).show();
+        this.responses.hide().populate(this.current).show();
     };
 
     //==========================================================================
@@ -1174,11 +1217,7 @@ CoSS.exprt = (function (my, window) {
     //                                  MENU
     //==========================================================================
 
-    function Menu(id) {
-        View.call(this, id);
-        this.items = new MenuItems();
-        this.help = new View("expertise-menu-help");
-
+    function Menu(id, toButtons) {
         var clearListener = bind(function() {
                 this.clear();
             }, this),
@@ -1186,12 +1225,15 @@ CoSS.exprt = (function (my, window) {
                 this.help.toggle();
             }, this);
 
-        buttons(function (button) {
-            if (hasClass(button, "expertise-menu-clear")) {
-                listener(button, "click", clearListener);
-            } else if (hasClass(button, "expertise-menu-help")) {
-                listener(button, "click", helpListener);
-            }
+        View.call(this, id);
+        this.items = new MenuItems();
+        this.help = new View("expertise-menu-help");
+
+        each(toButtons["expertise-menu-clear"], function (button) {
+            listener(button, "click", clearListener);
+        });
+        each(toButtons["expertise-menu-help"], function (button) {
+            listener(button, "click", helpListener);
         });
     }
 
@@ -1295,7 +1337,11 @@ CoSS.exprt = (function (my, window) {
     //                                RESPONSES
     //==========================================================================
 
-    function Responses(xmlDocument, id) {
+    function Responses(xmlDocument, id, toButtons) {
+        var helpListener = bind(function () {
+                this.help.toggle();
+            }, this);
+
         View.call(this, id);
         this.help = new View("expertise-responses-help");
         this.container = new View("expertise-responses-container");
@@ -1309,14 +1355,8 @@ CoSS.exprt = (function (my, window) {
                 return response1.compare(response2);
             });
 
-        var helpListener = bind(function () {
-                this.help.toggle();
-            }, this);
-
-        buttons(function (button) {
-            if (hasClass(button, "expertise-responses-help")) {
-                listener(button, "click", helpListener);
-            }
+        each(toButtons["expertise-responses-help"], function (button) {
+            listener(button, "click", helpListener);
         });
 
         this.container.listener("click", moreLessListener);
@@ -1398,24 +1438,26 @@ CoSS.exprt = (function (my, window) {
     function Response(xmlResponse) {
         var ELEMENT = 1;
 
-        // Collect element nodes, ignoring useless nodes.
+        // Collect element nodes, ignoring useless nodes for blanks, etc.
         function elements(nodes) {
             return filter(nodes, function(node) {
                 return node.nodeType === ELEMENT;
             });
         }
 
-        // Go through the element children of node. Each such child will have an
+        // Go through the element children of node. These children will have an
         // XML form along the following lines:
         //
-        // <key>value</key>
+        // <key>value</key>          (The value is frequently empty.)
         //
-        // For each such XML node, invoke the callback on the strings "key" and
-        // "value".
+        // The string "key" is accessible via the nodeName attribute. The string
+        // "value" can be accessed via the textContent attribute, or the
+        // innerText attribute for older IE. For each such XML node, invoke the
+        // callback on the strings "key" and "value".
         function keyValuePairs(node, callback, context) {
             each(elements(node.childNodes), function (child) {
                 callback.call(this, child.nodeName,
-                    child.textContent || child.innerText);  // innerText for IE
+                    child.textContent || child.innerText);
             }, context);
         }
 
@@ -1447,8 +1489,8 @@ CoSS.exprt = (function (my, window) {
         // thematic groups. For each thematic key in toDependents, add that key
         // with a value of 1, if there is a key from the corresponding thematic
         // group--the "dependents"--that wound up with a truthy value as a
-        // result of the loop above. Thus, logically, the thematic key
-        // represents the disjunction of the dependents. If any thematic key
+        // result of the loop above. Thus, logically, each thematic key
+        // represents the disjunction of its dependents. If any thematic key
         // turns out to get the value 1, add the the key expertise with value 1.
         // Logically, the expertise key represents the disjunction of the
         // thematic keys.
