@@ -805,27 +805,6 @@ CoSS.exprt = (function (my, window) {
         }, context);
     }
 
-    function findIf(collection, callback, context) {
-        var value; // === undefined
-
-        each(collection, function (item, x, collection) {
-            if (callback.call(this, item, x, collection)) {
-                value = item;
-                return false;
-            }
-        }, context);
-        return value;
-    }
-
-    function associate(collection, callback, context) {
-        var value = {};
-
-        each(collection, function (item, x, collection) {
-            value[item] = callback.call(this, item, x, collection);
-        }, context);
-        return value;
-    }
-
     //--------------------------------------------------------------------------
     //                          Object Manipulation
     //--------------------------------------------------------------------------
@@ -1008,26 +987,6 @@ CoSS.exprt = (function (my, window) {
         return this;
     };
 
-
-    View.prototype.dispatch = function (type, interface) {
-        interface = interface || "Events";
-
-        var event;
-
-        if (this.element.dispatchEvent) {
-            try {  // preferred method
-                event = new Event(type);
-            } catch (error) {  // deprecated, but works in IE 9+
-                event = document.createEvent(interface);
-                event.initEvent(type, false, true);
-            }
-            this.element.dispatchEvent(event);
-        } else {  // IE before version 9
-            event = document.createEventObject();
-            this.element.fireEvent("on" + type, event);
-        }
-    };
-
     //==========================================================================
     //                                KEY VIEW
     //==========================================================================
@@ -1090,23 +1049,134 @@ CoSS.exprt = (function (my, window) {
     };
 
     //==========================================================================
+    //                                CHECKBOX
+    //==========================================================================
+
+    function Checkbox(id, key) {
+        if (arguments.length > 0) {
+            View.call(this, id);
+            this.key = key;
+        }
+    }
+
+    Checkbox.prototype = new View();
+
+    Checkbox.prototype.checked = function () {
+        return this.element.checked;
+    };
+
+    Checkbox.prototype.populate = function (properties) {
+        var value = !!properties[this.key];
+
+        this.element.checked = value;
+        return value;
+    };
+
+    Checkbox.prototype.properties = function () {
+        var properties = {};
+
+        if (this.checked()) {
+            properties[this.key] = 1;
+        }
+        return properties;
+    };
+
+    //==========================================================================
+    //                             CHECKBOX GROUP
+    //==========================================================================
+
+    function CheckboxGroup(id, children) {
+        if (arguments.length > 0) {
+            View.call(this, id);
+            this.children = children;
+        }
+    }
+
+    CheckboxGroup.prototype = new View();
+
+    CheckboxGroup.prototype.populate = function (properties) {
+        return reduce(this.children, function (exists, child) {
+            return child.populate(properties) || exists;
+        }, false);
+    };
+
+    CheckboxGroup.prototype.properties = function () {
+        return reduce(this.children, function (properties, child) {
+            return extend(properties, child.properties());
+        }, {});
+    };
+
+    //==========================================================================
+    //                            CHECKBOX COMPLEX
+    //==========================================================================
+
+    function CheckboxComplex(id, key, group) {
+        if (arguments.length > 0) {
+            Checkbox.call(this, id, key);
+            this.group = group;
+
+            this.listener("change", bind(function () {
+                // Repopulate group only if this checkbox is unchecked.
+                // I.e., the populate statement must be the second disjunct.
+                this.group.showIff(this.checked() ||
+                    this.group.populate(alwaysTrue));
+            }, this));
+        }
+    }
+
+    CheckboxComplex.prototype = new Checkbox();
+
+    CheckboxComplex.prototype.populate = function (properties) {
+        var value = Checkbox.prototype.populate.call(this, properties);
+
+        // The form of the disjunction is designed to make sure that both
+        // populate statements are invoked. The variable disjunct must be last.
+        value = this.group.populate(properties) || value;
+        this.group.showIff(value);
+        return value;
+    };
+
+    CheckboxComplex.prototype.properties = function () {
+        return extend(
+            Checkbox.prototype.properties.call(this), this.group.properties());
+    };
+
+    //==========================================================================
     //                               CONTROLLER
     //==========================================================================
 
     function Controller(xmlDocument) {
-        var classes = [
-                "expertise-apply",
-                "expertise-cancel",
-                "expertise-search",
-                "expertise-back",
-                "expertise-forward",
-                "expertise-menu-clear",
-                "expertise-menu-help",
-                "expertise-responses-help"
-            ],
-            toButtons = associate(classes, function() {
-                return [];
-            }),
+        function toButtonsMapping() {
+            var classes = [
+                    "expertise-apply",
+                    "expertise-cancel",
+                    "expertise-search",
+                    "expertise-back",
+                    "expertise-forward",
+                    "expertise-menu-clear",
+                    "expertise-menu-help",
+                    "expertise-responses-help"
+                ],
+                mapping = {};
+
+            // It is best to have at least an empty list for each class name.
+            each(classes, function (name) {
+                mapping[name] = [];
+            });
+            each(document.getElementsByTagName("button"), function (button) {
+                each(classes, function (name) {
+                    var value = hasClass(button, name);
+
+                    if (value) {
+                        mapping[name].push(button);
+                    }
+                    return !value;  // Break after first (and only) hit.
+                });
+            });
+            return mapping;
+        }
+
+        var toButtons = toButtonsMapping(),
             applyListener = bind(function() {
                 this.back.push(this.current);
                 this.back.concat(this.forward);
@@ -1132,16 +1202,6 @@ CoSS.exprt = (function (my, window) {
                 this.current = this.forward.pop();
                 this.responses.populate(this.current);
             }, this);
-
-        each(document.getElementsByTagName("button"), function (button) {
-            var key = findIf(classes, function (name) {
-                    return hasClass(button, name);
-                });
-
-            if (key) {
-                toButtons[key].push(button);
-            }
-        });
 
         this.back = new NavigatorButton("expertise-back-button");
         this.forward = new NavigatorButton("expertise-forward-button");
@@ -1218,6 +1278,22 @@ CoSS.exprt = (function (my, window) {
     //==========================================================================
 
     function Menu(id, toButtons) {
+        function complex(key, dependents) {
+            return new CheckboxComplex(
+                key + "Checkbox", key, group(key, dependents));
+        }
+
+        function group(key, dependents) {
+            return new CheckboxGroup(
+                key + "Dependents", children(dependents));
+        }
+
+        function children(keys) {
+            return map(keys, function (key) {
+                return new Checkbox(key + "Checkbox", key);
+            });
+        }
+
         var clearListener = bind(function() {
                 this.clear();
             }, this),
@@ -1225,8 +1301,10 @@ CoSS.exprt = (function (my, window) {
                 this.help.toggle();
             }, this);
 
-        View.call(this, id);
-        this.items = new MenuItems();
+        CheckboxGroup.call(this, id,
+            reduce(toDependents, function (list, dependents, key) {
+                return list.concat([complex(key, dependents)]);
+            }, []));
         this.help = new View("expertise-menu-help");
 
         each(toButtons["expertise-menu-clear"], function (button) {
@@ -1237,7 +1315,7 @@ CoSS.exprt = (function (my, window) {
         });
     }
 
-    Menu.prototype = new View();
+    Menu.prototype = new CheckboxGroup();
 
     Menu.prototype.hide = function () {
         this.help.hide();
@@ -1245,7 +1323,7 @@ CoSS.exprt = (function (my, window) {
     };
 
     Menu.prototype.populate = function (properties) {
-        this.items.populate(properties);
+        CheckboxGroup.prototype.populate.call(this, properties);
         return this;
     };
 
@@ -1254,87 +1332,11 @@ CoSS.exprt = (function (my, window) {
     };
 
     Menu.prototype.properties = function () {
-        return extend(this.items.properties(), alwaysTrue);
+        return extend(CheckboxGroup.prototype.properties.call(this), alwaysTrue);
     };
 
     //==========================================================================
-    //                               MENU ITEMS
-    //==========================================================================
-
-    function MenuItems() {
-        each(toDependents, function (dependents, key1) {
-            this[key1] =
-                new MainMenuItem(key1, map(dependents, function (key2) {
-                    this[key2] = new MenuItem(key2);
-                    return this[key2];
-                }, this));
-        }, this);
-    }
-
-    MenuItems.prototype.populate = function (properties) {
-        each(this, function(item, key) {
-            item.setChecked(properties[key]);
-        });
-    };
-
-    MenuItems.prototype.properties = function () {
-        return map(filter(this, function (item) {
-            return item.getChecked();
-        }), function (item) {
-            return 1;
-        });
-    };
-
-    //==========================================================================
-    //                               MENU ITEM
-    //==========================================================================
-
-    function MenuItem(key) {
-        if (arguments.length > 0) {
-            View.call(this, key + "Checkbox");
-        }
-    }
-
-    MenuItem.prototype = new View();
-
-    MenuItem.prototype.getChecked = function () {
-        return this.element.checked;
-    };
-
-    MenuItem.prototype.setChecked = function (value) {
-        this.element.checked = !!value;
-    };
-
-    //==========================================================================
-    //                             MAIN MENU ITEM
-    //==========================================================================
-
-    function MainMenuItem(key, dependents) {
-        MenuItem.call(this, key);
-        this.dependents = dependents;
-        this.subcontainer = new View(key + "Dependents");
-
-        this.listener("change", bind(function () {
-            var value = this.getChecked();
-
-            this.subcontainer.showIff(value);
-            if (!value) {
-                each(this.dependents, function (item) {
-                    item.setChecked(false);
-                });
-            }
-        }, this));
-    }
-
-    MainMenuItem.prototype = new MenuItem();
-
-    MainMenuItem.prototype.setChecked = function (value) {
-        MenuItem.prototype.setChecked.call(this, value);
-        this.dispatch("change");
-    };
-
-    //==========================================================================
-    //                                RESPONSES
+    //                               RESPONSES
     //==========================================================================
 
     function Responses(xmlDocument, id, toButtons) {
@@ -1432,7 +1434,7 @@ CoSS.exprt = (function (my, window) {
     };
 
     //==========================================================================
-    //                                 RESPONSE
+    //                                RESPONSE
     //==========================================================================
 
     function Response(xmlResponse) {
@@ -1580,7 +1582,7 @@ CoSS.exprt = (function (my, window) {
                 "</div>";
         }
 
-        return  this.cache;
+        return this.cache;
     };
 
     Response.prototype.nameEmailBlock = function () {
