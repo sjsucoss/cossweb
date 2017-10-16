@@ -824,12 +824,6 @@ CoSS.exprt = (function (my, window) {
         });
     }
 
-    function keys(object) {
-        return reduce(object, function(accumulator, ignore, key) {
-            return accumulator.concat([key]);
-        }, []);
-    }
-
     //--------------------------------------------------------------------------
     //                          String Manipulation
     //--------------------------------------------------------------------------
