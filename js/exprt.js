@@ -1592,16 +1592,15 @@ CoSS.exprt = (function (my, window) {
     Response.prototype.expertiseBlock = (function () {
         function existingGroups(callback, context) {
             return reduce(toDependents,
-                function (accumulator, dependents, key) {
-                    return accumulator +
+                function (html, dependents, key) {
+                    return html +
                         (this[key] ? callback.call(this, key, dependents) : "");
                 }, "", context);
         }
 
         function existingKeys(collection, callback, context) {
-            return reduce(collection, function (accumulator, key) {
-                return accumulator +
-                    (this[key] ? callback.call(this, key) : "");
+            return reduce(collection, function (html, key) {
+                return html + (this[key] ? callback.call(this, key) : "");
             }, "", context);
         }
 
