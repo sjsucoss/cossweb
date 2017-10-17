@@ -4,7 +4,7 @@
  * Michael T. Wescoat
  * College of Social Sciences
  * San Jose State Univiersity
- * October 5, 2017
+ * October 2017
  *
  */
 
@@ -1326,7 +1326,8 @@ CoSS.exprt = (function (my, window) {
     };
 
     Menu.prototype.properties = function () {
-        return extend(CheckboxGroup.prototype.properties.call(this), alwaysTrue);
+        return extend(
+            CheckboxGroup.prototype.properties.call(this), alwaysTrue);
     };
 
     //==========================================================================
@@ -1377,7 +1378,7 @@ CoSS.exprt = (function (my, window) {
     Responses.prototype.filter = function (properties) {
         return filter(this.responses, function (response) {
             return response.contains(properties);
-        }, this);
+        });
     };
 
     Responses.prototype.html = function (responses) {
