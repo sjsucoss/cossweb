@@ -732,7 +732,6 @@ CoSS.exprt = (function (my, window) {
                 }
             }
         }
-
         return collection;
     }
 
@@ -752,7 +751,6 @@ CoSS.exprt = (function (my, window) {
                 value[key] = callback.call(this, item, key, collection);
             }, context);
         }
-
         return value;
     }
 
@@ -776,7 +774,6 @@ CoSS.exprt = (function (my, window) {
                 }
             }, context);
         }
-
         return value;
     }
 
@@ -784,7 +781,6 @@ CoSS.exprt = (function (my, window) {
         each(collection, function(item, x, collection) {
             accumulator = callback.call(this, accumulator, item, x, collection);
         }, context);
-
         return accumulator;
     }
 
@@ -795,7 +791,6 @@ CoSS.exprt = (function (my, window) {
             value = !!callback.call(this, item, x, collection);
             return value;
         }, context);
-
         return value;
     }
 
@@ -845,7 +840,6 @@ CoSS.exprt = (function (my, window) {
         if (!match) {
             throw new Error("Could not parse name: " + name);
         }
-
         return [match[2].replace(/\s/g, "")].concat(match[1].split(" "));
     }
 
@@ -858,12 +852,10 @@ CoSS.exprt = (function (my, window) {
             if (alphabetizer1[i] < alphabetizer2[i]) {
                 return -1;
             }
-
             if (alphabetizer1[i] > alphabetizer2[i]) {
                 return 1;
             }
         }
-
         return length1 - length2;
     }
 
@@ -899,7 +891,6 @@ CoSS.exprt = (function (my, window) {
         while (classes.indexOf(name) >= 0) {
             classes = classes.replace(name, " ");
         }
-
         setClasses(element, classes);
     }
 
@@ -1108,7 +1099,6 @@ CoSS.exprt = (function (my, window) {
         if (arguments.length > 0) {
             Checkbox.call(this, id, key);
             this.group = group;
-
             this.listener("change", bind(function () {
                 // Repopulate group only if this checkbox is unchecked.
                 // I.e., the populate statement must be the second disjunct.
@@ -1141,28 +1131,23 @@ CoSS.exprt = (function (my, window) {
 
     function Controller(xmlDocument) {
         function toButtonsMapping() {
-            var classes = [
-                    "expertise-apply",
-                    "expertise-cancel",
-                    "expertise-search",
-                    "expertise-back",
-                    "expertise-forward",
-                    "expertise-menu-clear",
-                    "expertise-menu-help",
-                    "expertise-responses-help"
-                ],
-                mapping = {};
+            var mapping = {
+                    "expertise-apply": [],
+                    "expertise-cancel": [],
+                    "expertise-search": [],
+                    "expertise-back": [],
+                    "expertise-forward": [],
+                    "expertise-menu-clear": [],
+                    "expertise-menu-help": [],
+                    "expertise-responses-help": []
+                };
 
-            // It is best to have at least an empty list for each class name.
-            each(classes, function (name) {
-                mapping[name] = [];
-            });
             each(document.getElementsByTagName("button"), function (button) {
-                each(classes, function (name) {
+                each(mapping, function (buttons, name) {
                     var value = hasClass(button, name);
 
                     if (value) {
-                        mapping[name].push(button);
+                        buttons.push(button);
                     }
                     return !value;  // Break after first (and only) hit.
                 });
@@ -1344,7 +1329,6 @@ CoSS.exprt = (function (my, window) {
         this.container = new View("expertise-responses-container");
         this.summary = new Summary("expertise-responses-summary");
         this.matches = new Matches("expertise-responses-matches");
-
         this.responses = map(xmlDocument.getElementsByTagName("Response"),
             function (xmlResponse) {
                 return new Response(xmlResponse);
@@ -1355,7 +1339,7 @@ CoSS.exprt = (function (my, window) {
         each(toButtons["expertise-responses-help"], function (button) {
             listener(button, "click", helpListener);
         });
-
+        // This catches clicks on the "SHOW MORE" and "SHOW LESS" buttons.
         this.container.listener("click", moreLessListener);
     }
 
@@ -1576,7 +1560,6 @@ CoSS.exprt = (function (my, window) {
                 this.expertiseBlock() +
                 "</div>";
         }
-
         return this.cache;
     };
 
@@ -1646,10 +1629,8 @@ CoSS.exprt = (function (my, window) {
 
         if (target && target.id) {
             match = /^(more|less)\-(.+?)$/.exec(target.id);
-
             if (match) {
                 div = document.getElementById(match[2]);
-
                 if (div) {
                     (match[1] === "more" ? removeClass : addClass)(div, "less");
                 }
