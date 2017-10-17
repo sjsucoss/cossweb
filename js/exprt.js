@@ -1366,8 +1366,8 @@ CoSS.exprt = (function (my, window) {
     };
 
     Responses.prototype.html = function (responses) {
-        return reduce(responses, function (accumulator, response) {
-            return accumulator + response.html();
+        return reduce(responses, function (html, response) {
+            return html + response.html();
         }, "");
     };
 
