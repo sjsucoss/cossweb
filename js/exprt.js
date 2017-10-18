@@ -1257,7 +1257,7 @@ CoSS.exprt = (function (my, window) {
     //                                  MENU
     //==========================================================================
 
-    function Menu(id, toButtons) {
+    function Menu(id) {
         function complex(key, dependents) {
             return new CheckboxComplex(
                 key + "Checkbox", key, group(key, dependents));
@@ -1320,7 +1320,7 @@ CoSS.exprt = (function (my, window) {
     //                               RESPONSES
     //==========================================================================
 
-    function Responses(xmlDocument, id, toButtons) {
+    function Responses(xmlDocument, id) {
         var helpListener = bind(function () {
                 this.help.toggle();
             }, this);
