@@ -1185,9 +1185,8 @@ CoSS.exprt = (function (my, window) {
 
         this.back = new NavigatorButton("expertise-back-button");
         this.forward = new NavigatorButton("expertise-forward-button");
-        this.menu = new Menu("expertise-menu", toButtons);
-        this.responses = new Responses(
-            xmlDocument, "expertise-responses", toButtons);
+        this.menu = new Menu("expertise-menu");
+        this.responses = new Responses(xmlDocument, "expertise-responses");
 
         each(toButtons["expertise-apply"], function (button) {
             listener(button, "click", applyListener);
