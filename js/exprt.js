@@ -701,6 +701,27 @@ CoSS.exprt = (function (my, window) {
             irbIacucHumanSubjectsDeception: "Human subjects research involving deception",
             irbIacucIacucApplication: "IACUC application"
         },
+        toButtons = reduce(document.getElementsByTagName("button"),
+            function (mapping, button) {
+                each(mapping, function (buttons, name) {
+                    var value = hasClass(button, name);
+
+                    if (value) {
+                        buttons.push(button);
+                    }
+                    return !value;  // Break after first (and only) hit.
+                });
+                return mapping;
+            }, {
+                "expertise-apply": [],
+                "expertise-cancel": [],
+                "expertise-search": [],
+                "expertise-back": [],
+                "expertise-forward": [],
+                "expertise-menu-clear": [],
+                "expertise-menu-help": [],
+                "expertise-responses-help": []
+            }),
         alwaysTrue = {share: 1};
 
     //==========================================================================
@@ -892,6 +913,12 @@ CoSS.exprt = (function (my, window) {
             classes = classes.replace(name, " ");
         }
         setClasses(element, classes);
+    }
+
+    function classes(element) {
+        var className = trim(element.className);
+
+        return className ? className.split(" ") : [];
     }
 
     //--------------------------------------------------------------------------
@@ -1130,33 +1157,7 @@ CoSS.exprt = (function (my, window) {
     //==========================================================================
 
     function Controller(xmlDocument) {
-        function toButtonsMapping() {
-            var mapping = {
-                    "expertise-apply": [],
-                    "expertise-cancel": [],
-                    "expertise-search": [],
-                    "expertise-back": [],
-                    "expertise-forward": [],
-                    "expertise-menu-clear": [],
-                    "expertise-menu-help": [],
-                    "expertise-responses-help": []
-                };
-
-            each(document.getElementsByTagName("button"), function (button) {
-                each(mapping, function (buttons, name) {
-                    var value = hasClass(button, name);
-
-                    if (value) {
-                        buttons.push(button);
-                    }
-                    return !value;  // Break after first (and only) hit.
-                });
-            });
-            return mapping;
-        }
-
-        var toButtons = toButtonsMapping(),
-            applyListener = bind(function() {
+        var applyListener = bind(function() {
                 this.back.push(this.current);
                 this.back.concat(this.forward);
                 this.forward.clear();
