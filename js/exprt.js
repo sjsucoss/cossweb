@@ -915,12 +915,6 @@ CoSS.exprt = (function (my, window) {
         setClasses(element, classes);
     }
 
-    function classes(element) {
-        var className = trim(element.className);
-
-        return className ? className.split(" ") : [];
-    }
-
     //--------------------------------------------------------------------------
     //                                 Events
     //--------------------------------------------------------------------------
