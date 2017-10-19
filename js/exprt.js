@@ -495,7 +495,7 @@ CoSS.exprt = (function (my, window) {
             ]
         },
         toDescription = {
-            book: "Writing Books",
+            book: "Writing Books*",
             bookProposal: "Scholarly non-edited books (where a book proposal is submitted to secure a contract)",
             bookManuscript: "Scholarly non-edited books (where the entire manuscript is submitted to secure a contract)",
             bookEdited: "Scholarly edited books",
@@ -506,7 +506,7 @@ CoSS.exprt = (function (my, window) {
             bookTextbook: "Textbooks",
             bookPopular: "Popular books",
 
-            journal: "Writing Journal Articles",
+            journal: "Writing Journal Articles*",
             journalSelecting: "Selecting a journal",
             journalReviewProcess: "Understanding manuscript review process",
             journalReviewerComments: "Responding to reviewers' and editor's comments",
@@ -515,20 +515,20 @@ CoSS.exprt = (function (my, window) {
             journalMultiauthorWriting: "Coordinating multi-authored papers during the writing stage",
             journalMultiauthorReview: "Coordinating multi-authored papers during the peer-review stage",
 
-            manuscriptPeerReview: "Peer Reviewing Manuscripts",
+            manuscriptPeerReview: "Peer Reviewing Manuscripts*",
             manuscriptPeerReviewBecomeReviewer: "How to become a peer reviewer",
             manuscriptPeerReviewChooseJournal: "How to choose journals for peer review",
             manuscriptPeerReviewBestPractices: "How to write a good peer review/best practices for peer review",
 
-            opEd: "Writing Op-eds",
+            opEd: "Writing Op-eds*",
             opEdSelectingPublication: "How to select a publication for an op-ed",
             opEdWriting: "How to write an op-ed",
 
-            bookReview: "Book Reviews",
+            bookReview: "Writing Book Reviews*",
             bookReviewWriting: "How to write a book review",
             bookReviewValue: "Scholarly value of a book review",
 
-            journalEditor: "Journal Editor",
+            journalEditor: "Journal Editorship*",
             journalEditorBecomeEditor: "How to become a journal editor",
             journalEditorManageWorkload: "How to manage workload",
             journalEditorAssignPeerReviewer: "How to find and assign peer reviewers",
@@ -652,7 +652,7 @@ CoSS.exprt = (function (my, window) {
             grantWritingLocal: "Local governments",
             grantWritingUniversity: "Internal university and/or college",
 
-            proposalReview: "Proposal review for the following funding agencies:",
+            proposalReview: "Proposal Review for the Following Funding Agencies:",
             proposalReviewCDC: "CDC",
             proposalReviewEPA: "EPA",
             proposalReviewNASA: "NASA",
@@ -661,7 +661,7 @@ CoSS.exprt = (function (my, window) {
             proposalReviewNIH: "NIH",
             proposalReviewNSF: "NSF",
 
-            fellowship: "Fellowships",
+            fellowship: "Fellowships*",
             fellowshipCASBS: "Center for Advanced Study and Behavioral Sciences at Stanford",
             fellowshipFordFoundation: "Ford Foundation",
             fellowshipFulbright: "Fulbright",
@@ -672,27 +672,27 @@ CoSS.exprt = (function (my, window) {
             fellowshipStanfordHumanitiesCenter: "Stanford Humanities Center",
             fellowshipWoodrowWilson: "Woodrow Wilson National Fellowship Foundation",
 
-            rscaProject: "Managing RSCA Projects",
+            rscaProject: "Managing RSCA Projects*",
             rscaProjectLeadTeams: "Lead teams",
             rscaProjectResearchManagement: "Research participant management (e.g., through SONA software)",
             rscaProjectPostAwardManagement: "Post-award financial management",
             rscaProjectEthicalChallenges: "Address ethical challenges or concerns",
             rscaProjectFederalAgenciesReporting: "Federal agencies reporting",
 
-            conference: "Conferences",
+            conference: "Conferences*",
             conferenceApplication: "Apply to present at a conference (e.g., preparing an abstract)",
             conferencePresentation: "Present at a conference",
             conferencePoster: "Prepare a poster",
             conferencePanel: "Organize a panel",
             conferenceOrganization: "Organize a conference",
 
-            studentResearch: "Student Research",
+            studentResearch: "Student Research*",
             studentResearchSuperviseStudentResearch: "Supervise student research",
             studentResearchServeOnThesisCommittee: "Serve on a thesis committee",
             studentResearchChairThesisCommittee: "Chair a thesis committee",
             studentResearchSuperviseStudentAssistants: "Supervise student research assistants",
 
-            irbIacuc: "Human Subjects and Institutional Review Board (IRB) and Institutional Animal Care & Use Committee (IACUC)",
+            irbIacuc: "Human Subjects and Institutional Review Board (IRB) and Institutional Animal Care & Use Committee (IACUC)*",
             irbIacucIrbExempt: "IRB application (exempt category)",
             irbIacucIrbExpedited: "IRB application (expedited or full review)",
             irbIacucProtocolNarrative: "IRB protocol narrative",
@@ -701,26 +701,43 @@ CoSS.exprt = (function (my, window) {
             irbIacucHumanSubjectsDeception: "Human subjects research involving deception",
             irbIacucIacucApplication: "IACUC application"
         },
-        toButtons = reduce(document.getElementsByTagName("button"),
-            function (mapping, button) {
-                each(mapping, function (buttons, name) {
-                    var value = hasClass(button, name);
+        toButtons = reduce(document.getElementsByTagName("BUTTON"),
+            function (mapping, element) {
+                each(mapping, function (elements, name) {
+                    var value = hasClass(element, name);
 
                     if (value) {
-                        buttons.push(button);
+                        elements.push(element);
                     }
                     return !value;  // Break after first (and only) hit.
                 });
                 return mapping;
             }, {
                 "expertise-apply": [],
+                "expertise-clear": [],
                 "expertise-cancel": [],
-                "expertise-search": [],
+                "expertise-new-search": [],
+                "expertise-edit-search" : [],
                 "expertise-back": [],
                 "expertise-forward": [],
-                "expertise-menu-clear": [],
                 "expertise-menu-help": [],
                 "expertise-responses-help": []
+            }),
+        toSpans = reduce(document.getElementsByTagName("SPAN"),
+            function (mapping, element) {
+                each(mapping, function (elements, name) {
+                    var value = hasClass(element, name);
+
+                    if (value) {
+                        elements.push(element);
+                    }
+                    return !value;  // Break after first (and only) hit.
+                });
+                return mapping;
+            }, {
+                "expertise-apply": [],
+                "expertise-clear": [],
+                "expertise-cancel": []
             }),
         alwaysTrue = {share: 1};
 
@@ -922,9 +939,9 @@ CoSS.exprt = (function (my, window) {
     function listener(element, type, callback) {
         if (element.addEventListener) {
             element.addEventListener(type, callback, false);
-        } else if (element.attachEvent) {
+        } else {
             element.attachEvent("on" + type, callback);
-        } // otherwise, just forget about it
+        }
     }
 
     function bind(callback, context) {
@@ -955,48 +972,125 @@ CoSS.exprt = (function (my, window) {
     //                                  VIEW
     //==========================================================================
 
+    /**
+     * View provides basic functionality to an associated DOM element. The
+     * element is retrieved by id. Most objects used here inherit from View.
+     */
     function View(id) {
         if (arguments.length > 0) {
             this.element = document.getElementById(id);
         }
     }
 
+    /**
+     * Adds the class "hide" to element. In CSS: ".hide { display: none; }"
+     * Returns this, to facilitate chaining.
+     */
     View.prototype.hide = function () {
         addClass(this.element, "hide");
         return this;
     };
 
+    /**
+     * Removes the class "hide" from element, allowing it to display normally.
+     * Returns this, to facilitate chaining.
+     */
     View.prototype.show = function () {
         removeClass(this.element, "hide");
         return this;
     };
 
+    /**
+     * Holds iff element has the "hide" class.
+     */
     View.prototype.hidden = function () {
         return hasClass(this.element, "hide");
     };
 
+    /**
+     * Shows element if condition holds and hides it if condition fails.
+     * Returns this, to facilitate chaining.
+     */
     View.prototype.showIff = function (condition) {
         return condition ? this.show() : this.hide();
     };
 
+    /**
+     * Shows element if it is hidden, and hides it if it is not hidden.
+     * Returns this, to facilitate chaining.
+     */
     View.prototype.toggle = function () {
         return this.showIff(this.hidden());
     };
 
+    /**
+     * Makes html the new content of element.
+     * Returns this, to facilitate chaining.
+     */
     View.prototype.fill = function (html) {
         this.element.innerHTML = html;
         return this;
     };
 
+    /**
+     * Adds callback to element as a listener for events of type.
+     * Returns this, to facilitate chaining.
+     */
     View.prototype.listener = function (type, callback) {
         listener(this.element, type, callback);
         return this;
     };
 
     //==========================================================================
+    //                               MULTIVIEW
+    //==========================================================================
+
+    function Multiview(name) {
+        if (arguments.length > 0) {
+            this.elements = (toButtons[name] || []).concat(toSpans[name] || []);
+        }
+    }
+
+    Multiview.prototype.hide = function () {
+        each(this.elements, function (element) {
+            addClass(element, "hide");
+        });
+        return this;
+    };
+
+    Multiview.prototype.show = function () {
+        each(this.elements, function (element) {
+            removeClass(element, "hide");
+        });
+        return this;
+    };
+
+    Multiview.prototype.showIff = function (condition) {
+        return View.prototype.showIff.call(this, condition);
+    };
+
+    //==========================================================================
+    //                          POPULATION SENSITIVE
+    //==========================================================================
+
+    function PopulationSensitive (name) {
+        Multiview.call(this, name);
+    }
+
+    PopulationSensitive.prototype = new Multiview();
+
+    PopulationSensitive.prototype.update = function (properties) {
+        return this.showIff(!contains(alwaysTrue, properties));
+    };
+
+    //==========================================================================
     //                                KEY VIEW
     //==========================================================================
 
+    /**
+     * KeyView associates a View with a key, which is meant to select values
+     * from a properties object.
+     */
     function KeyView(id, key) {
         if (arguments.length > 0) {
             View.call(this, id);
@@ -1006,6 +1100,10 @@ CoSS.exprt = (function (my, window) {
 
     KeyView.prototype = new View();
 
+    /**
+     * Shows element iff key retrieves a truthy value from properties.
+     * Returns that value, rather than returning this, as with a basic View.
+     */
     KeyView.prototype.showIff = function (properties) {
         var value = properties[this.key];
 
@@ -1027,8 +1125,8 @@ CoSS.exprt = (function (my, window) {
     GroupView.prototype = new View();
 
     GroupView.prototype.showIff = function (properties) {
-        var value = reduce(this.children, function (exists, child) {
-                return child.showIff(properties) || exists;
+        var value = reduce(this.children, function (value, child) {
+                return child.showIff(properties) || value;
             }, false);
 
         View.prototype.showIff.call(this, value);
@@ -1152,33 +1250,43 @@ CoSS.exprt = (function (my, window) {
 
     function Controller(xmlDocument) {
         var applyListener = bind(function() {
-                this.back.push(this.current);
                 this.back.concat(this.forward);
                 this.forward.clear();
                 this.current = this.menu.hide().properties();
+                this.cancels.show();      // First search must be over, so show.
+                this.explanation.hide();  // Hide after first search.
                 this.responses.populate(this.current).show();
             }, this),
             cancelListener = bind(function() {
                 this.menu.hide();
+                this.current = this.back.pop();
                 this.responses.show();
             }, this),
-            searchListener = bind(function () {
+            newSearchListener = bind(function () {
+                this.back.push(this.current);
                 this.responses.hide();
                 this.menu.clear().show();
             }, this),
-            backListener = bind(function() {
+            editSearchListener = bind(function () {
+                this.back.push(this.current);
+                this.responses.hide();
+                this.menu.populate(this.current).show();
+            }, this),
+            backListener = bind(function () {
                 this.forward.push(this.current);
                 this.current = this.back.pop();
                 this.responses.populate(this.current);
             }, this),
-            forwardListener = bind(function() {
+            forwardListener = bind(function () {
                 this.back.push(this.current);
                 this.current = this.forward.pop();
                 this.responses.populate(this.current);
             }, this);
 
-        this.back = new NavigatorButton("expertise-back-button");
-        this.forward = new NavigatorButton("expertise-forward-button");
+        this.cancels = new Multiview("expertise-cancel");
+        this.back = new NavigatorButton("expertise-back");
+        this.forward = new NavigatorButton("expertise-forward");
+        this.explanation = new View("expertise-explanation");
         this.menu = new Menu("expertise-menu");
         this.responses = new Responses(xmlDocument, "expertise-responses");
 
@@ -1188,8 +1296,11 @@ CoSS.exprt = (function (my, window) {
         each(toButtons["expertise-cancel"], function (button) {
             listener(button, "click", cancelListener);
         });
-        each(toButtons["expertise-search"], function (button) {
-            listener(button, "click", searchListener);
+        each(toButtons["expertise-new-search"], function (button) {
+            listener(button, "click", newSearchListener);
+        });
+        each(toButtons["expertise-edit-search"], function (button) {
+            listener(button, "click", editSearchListener);
         });
         each(toButtons["expertise-back"], function (button) {
             listener(button, "click", backListener);
@@ -1200,10 +1311,12 @@ CoSS.exprt = (function (my, window) {
     }
 
     Controller.prototype.initialize = function () {
-        this.current = this.menu.hide().clear().properties();
         this.back.clear();
         this.forward.clear();
-        this.responses.hide().populate(this.current).show();
+        this.cancels.hide();  // Hide for first search.
+        this.responses.hide();
+        this.explanation.show();
+        this.menu.clear().show();
     };
 
     //==========================================================================
@@ -1219,31 +1332,24 @@ CoSS.exprt = (function (my, window) {
 
     NavigatorButton.prototype.push = function (datum) {
         this.stack.push(datum);
-        return this.adjust();
+        return this.show();
     };
 
     NavigatorButton.prototype.pop = function () {
         var datum = this.stack.pop();
 
-        this.adjust();
+        this.showIff(this.stack.length  > 0);
         return datum;
     };
 
     NavigatorButton.prototype.concat = function (other) {
         this.stack = this.stack.concat(other.stack);
-        return this.adjust();
+        return this.showIff(this.stack.length  > 0);
     };
 
     NavigatorButton.prototype.clear = function () {
         this.stack = [];
-        return this.adjust();
-    };
-
-    NavigatorButton.prototype.adjust = function () {
-        var length = this.stack.length;
-
-        this.showIff(length > 0);
-        return length;
+        return this.hide();
     };
 
     //==========================================================================
@@ -1251,23 +1357,35 @@ CoSS.exprt = (function (my, window) {
     //==========================================================================
 
     function Menu(id) {
-        function complex(key, dependents) {
-            return new CheckboxComplex(
-                key + "Checkbox", key, group(key, dependents));
+        function complex(key, dependents, listener) {
+            var view = new CheckboxComplex(
+                    key + "Checkbox", key, group(key, dependents));
+
+            view.listener("change", listener);
+            return view;
         }
 
-        function group(key, dependents) {
-            return new CheckboxGroup(
-                key + "Dependents", children(dependents));
+        function group(key, dependents, listener) {
+            return new CheckboxGroup(key + "Dependents",
+                map(dependents, function (key) {
+                    return simple(key, listener);
+                }));
         }
 
-        function children(keys) {
-            return map(keys, function (key) {
-                return new Checkbox(key + "Checkbox", key);
-            });
+        function simple(key, listener) {
+            var view = new Checkbox(key + "Checkbox", key);
+
+            view.listener("change", listener);
+            return view;
         }
 
-        var clearListener = bind(function() {
+        var checkboxListener = bind(function () {
+                var properties = this.properties();
+
+                this.applies.update(properties);
+                this.clears.update(properties);
+            }, this),
+            clearListener = bind(function () {
                 this.clear();
             }, this),
             helpListener = bind(function () {
@@ -1276,11 +1394,14 @@ CoSS.exprt = (function (my, window) {
 
         CheckboxGroup.call(this, id,
             reduce(toDependents, function (list, dependents, key) {
-                return list.concat([complex(key, dependents)]);
+                list.push(complex(key, dependents, checkboxListener));
+                return list;
             }, []));
+        this.applies = new PopulationSensitive("expertise-apply");
+        this.clears = new PopulationSensitive("expertise-clear");
         this.help = new View("expertise-menu-help");
 
-        each(toButtons["expertise-menu-clear"], function (button) {
+        each(toButtons["expertise-clear"], function (button) {
             listener(button, "click", clearListener);
         });
         each(toButtons["expertise-menu-help"], function (button) {
@@ -1296,6 +1417,8 @@ CoSS.exprt = (function (my, window) {
     };
 
     Menu.prototype.populate = function (properties) {
+        this.applies.update(properties);
+        this.clears.update(properties);
         CheckboxGroup.prototype.populate.call(this, properties);
         return this;
     };
@@ -1375,18 +1498,20 @@ CoSS.exprt = (function (my, window) {
         }
 
         function group(key, dependents) {
-            return new GroupView(key + "Sublist", children(dependents));
+            return new GroupView(key + "Sublist",
+                map(dependents, function (key) {
+                    return simple(key);
+                }));
         }
 
-        function children(keys) {
-            return map(keys, function (key) {
-                return new KeyView(key + "Item", key);
-            });
+        function simple(key) {
+            return new KeyView(key + "Item", key);
         }
 
         GroupView.call(this, id,
             reduce(toDependents, function (list, dependents, key) {
-                return list.concat([complex(key, dependents)]);
+                list.push(complex(key, dependents));
+                return list;
             }, []));
     }
 

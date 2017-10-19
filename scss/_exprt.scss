@@ -40,7 +40,8 @@
 
 .expertise,
 .expertise-help,
-.expertise-summary {
+.expertise-summary,
+#expertise-collaboration-options {
     margin: $medium 0;
     font-size: 87.5%;
 
@@ -61,7 +62,8 @@
 }
 
 .expertise-help,
-.expertise-summary {
+.expertise-summary,
+#expertise-collaboration-options {
     @include border-radius(15px);
 }
 
@@ -79,10 +81,14 @@
     }
 }
 
-.expertise-summary {
+.expertise-summary,
+#expertise-collaboration-options {
     padding: $medium $large;
     background-color: $light-blue;
     color: $blue;
+    border-style: solid;
+    border-width: 1px;
+    border-color: $blue;
 
     p, h2, h3, h4 {
         color: $blue;
