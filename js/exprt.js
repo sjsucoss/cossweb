@@ -1047,7 +1047,7 @@ CoSS.exprt = (function (my, window) {
 
     function Multiview(name) {
         if (arguments.length > 0) {
-            this.elements = (toButtons[name] || []).concat(toSpans[name] || []);
+            this.elements = toSpans[name] || [];
         }
     }
 
@@ -1065,22 +1065,208 @@ CoSS.exprt = (function (my, window) {
         return this;
     };
 
-    Multiview.prototype.showIff = function (condition) {
-        return View.prototype.showIff.call(this, condition);
+    Multiview.prototype.showIff = View.prototype.showIff;
+
+    //==========================================================================
+    //                            NAVIGATOR BUTTON
+    //==========================================================================
+
+    function NavigatorButton(id) {
+        View.call(this, id);
+        this.stack = [];
+    }
+
+    NavigatorButton.prototype = new View();
+
+    NavigatorButton.prototype.push = function (datum) {
+        this.stack.push(datum);
+        return this.show();
+    };
+
+    NavigatorButton.prototype.pop = function () {
+        var datum = this.stack.pop();
+
+        this.showIff(this.stack.length  > 0);
+        return datum;
+    };
+
+    NavigatorButton.prototype.concat = function (other) {
+        this.stack = this.stack.concat(other.stack);
+        return this.showIff(this.stack.length  > 0);
+    };
+
+    NavigatorButton.prototype.clear = function () {
+        this.stack = [];
+        return this.hide();
     };
 
     //==========================================================================
-    //                          POPULATION SENSITIVE
+    //                                CHECKBOX
     //==========================================================================
 
-    function PopulationSensitive (name) {
-        Multiview.call(this, name);
+    function Checkbox(id, key, callback) {
+        if (arguments.length > 0) {
+            View.call(this, id);
+            this.key = key;
+            this.listener("change", callback);
+        }
     }
 
-    PopulationSensitive.prototype = new Multiview();
+    Checkbox.prototype = new View();
 
-    PopulationSensitive.prototype.update = function (properties) {
-        return this.showIff(!contains(alwaysTrue, properties));
+    Checkbox.prototype.checked = function () {
+        return this.element.checked;
+    };
+
+    Checkbox.prototype.populate = function (properties) {
+        var value = !!properties[this.key];
+
+        this.element.checked = value;
+        return value;
+    };
+
+    Checkbox.prototype.properties = function () {
+        var properties = {};
+
+        if (this.checked()) {
+            properties[this.key] = 1;
+        }
+        return properties;
+    };
+
+    //==========================================================================
+    //                             CHECKBOX GROUP
+    //==========================================================================
+
+    function CheckboxGroup(id, children) {
+        if (arguments.length > 0) {
+            View.call(this, id);
+            this.children = children;
+        }
+    }
+
+    CheckboxGroup.prototype = new View();
+
+    CheckboxGroup.prototype.populate = function (properties) {
+        return reduce(this.children, function (exists, child) {
+            return child.populate(properties) || exists;
+        }, false);
+    };
+
+    CheckboxGroup.prototype.properties = function () {
+        return reduce(this.children, function (properties, child) {
+            return extend(properties, child.properties());
+        }, {});
+    };
+
+    //==========================================================================
+    //                            CHECKBOX COMPLEX
+    //==========================================================================
+
+    function CheckboxComplex(id, key, callback, group) {
+        if (arguments.length > 0) {
+            Checkbox.call(this, id, key, callback);
+            this.group = group;
+            this.listener("change", bind(function () {
+                // Repopulate group only if this checkbox is unchecked.
+                // I.e., the populate statement must be the second disjunct.
+                this.group.showIff(this.checked() ||
+                    this.group.populate(alwaysTrue));
+            }, this));
+        }
+    }
+
+    CheckboxComplex.prototype = new Checkbox();
+
+    CheckboxComplex.prototype.populate = function (properties) {
+        var value = Checkbox.prototype.populate.call(this, properties);
+
+        // The form of the disjunction is designed to make sure that both
+        // populate statements are invoked. The variable disjunct must be last.
+        value = this.group.populate(properties) || value;
+        this.group.showIff(value);
+        return value;
+    };
+
+    CheckboxComplex.prototype.properties = function () {
+        return extend(
+            Checkbox.prototype.properties.call(this), this.group.properties());
+    };
+
+    //==========================================================================
+    //                                  MENU
+    //==========================================================================
+
+    function Menu(id) {
+        function complex(key, callback, dependents) {
+            return new CheckboxComplex(key + "Checkbox",
+                key, callback, group(key, callback, dependents));
+        }
+
+        function group(key, callback, dependents) {
+            return new CheckboxGroup(key + "Dependents",
+                map(dependents, function (dependent) {
+                    return simple(dependent, callback);
+                }));
+        }
+
+        function simple(key, callback) {
+            return new Checkbox(key + "Checkbox", key, callback);
+        }
+
+        var checkboxListener = bind(function () {
+                var empty = contains(alwaysTrue, this.properties());
+
+                this.applies.showIff(!empty);
+                this.clears.showIff(!empty);
+            }, this),
+            clearListener = bind(function () {
+                this.clear();
+            }, this),
+            helpListener = bind(function () {
+                this.help.toggle();
+            }, this);
+
+        CheckboxGroup.call(this, id,
+            reduce(toDependents, function (list, dependents, key) {
+                list.push(complex(key, checkboxListener, dependents));
+                return list;
+            }, []));
+        this.applies = new Multiview("expertise-apply");
+        this.clears = new Multiview("expertise-clear");
+        this.help = new View("expertise-menu-help");
+
+        each(toButtons["expertise-clear"], function (button) {
+            listener(button, "click", clearListener);
+        });
+        each(toButtons["expertise-menu-help"], function (button) {
+            listener(button, "click", helpListener);
+        });
+    }
+
+    Menu.prototype = new CheckboxGroup();
+
+    Menu.prototype.hide = function () {
+        this.help.hide();
+        return View.prototype.hide.call(this);
+    };
+
+    Menu.prototype.populate = function (properties) {
+        var empty = contains(alwaysTrue, properties);
+
+        this.applies.showIff(!empty);
+        this.clears.showIff(!empty);
+        CheckboxGroup.prototype.populate.call(this, properties);
+        return this;
+    };
+
+    Menu.prototype.clear = function () {
+        return this.populate(alwaysTrue);
+    };
+
+    Menu.prototype.properties = function () {
+        return extend(
+            CheckboxGroup.prototype.properties.call(this), alwaysTrue);
     };
 
     //==========================================================================
@@ -1153,342 +1339,6 @@ CoSS.exprt = (function (my, window) {
     };
 
     //==========================================================================
-    //                                CHECKBOX
-    //==========================================================================
-
-    function Checkbox(id, key) {
-        if (arguments.length > 0) {
-            View.call(this, id);
-            this.key = key;
-        }
-    }
-
-    Checkbox.prototype = new View();
-
-    Checkbox.prototype.checked = function () {
-        return this.element.checked;
-    };
-
-    Checkbox.prototype.populate = function (properties) {
-        var value = !!properties[this.key];
-
-        this.element.checked = value;
-        return value;
-    };
-
-    Checkbox.prototype.properties = function () {
-        var properties = {};
-
-        if (this.checked()) {
-            properties[this.key] = 1;
-        }
-        return properties;
-    };
-
-    //==========================================================================
-    //                             CHECKBOX GROUP
-    //==========================================================================
-
-    function CheckboxGroup(id, children) {
-        if (arguments.length > 0) {
-            View.call(this, id);
-            this.children = children;
-        }
-    }
-
-    CheckboxGroup.prototype = new View();
-
-    CheckboxGroup.prototype.populate = function (properties) {
-        return reduce(this.children, function (exists, child) {
-            return child.populate(properties) || exists;
-        }, false);
-    };
-
-    CheckboxGroup.prototype.properties = function () {
-        return reduce(this.children, function (properties, child) {
-            return extend(properties, child.properties());
-        }, {});
-    };
-
-    //==========================================================================
-    //                            CHECKBOX COMPLEX
-    //==========================================================================
-
-    function CheckboxComplex(id, key, group) {
-        if (arguments.length > 0) {
-            Checkbox.call(this, id, key);
-            this.group = group;
-            this.listener("change", bind(function () {
-                // Repopulate group only if this checkbox is unchecked.
-                // I.e., the populate statement must be the second disjunct.
-                this.group.showIff(this.checked() ||
-                    this.group.populate(alwaysTrue));
-            }, this));
-        }
-    }
-
-    CheckboxComplex.prototype = new Checkbox();
-
-    CheckboxComplex.prototype.populate = function (properties) {
-        var value = Checkbox.prototype.populate.call(this, properties);
-
-        // The form of the disjunction is designed to make sure that both
-        // populate statements are invoked. The variable disjunct must be last.
-        value = this.group.populate(properties) || value;
-        this.group.showIff(value);
-        return value;
-    };
-
-    CheckboxComplex.prototype.properties = function () {
-        return extend(
-            Checkbox.prototype.properties.call(this), this.group.properties());
-    };
-
-    //==========================================================================
-    //                               CONTROLLER
-    //==========================================================================
-
-    function Controller(xmlDocument) {
-        var applyListener = bind(function() {
-                this.back.concat(this.forward);
-                this.forward.clear();
-                this.current = this.menu.hide().properties();
-                this.cancels.show();      // First search must be over, so show.
-                this.explanation.hide();  // Hide after first search.
-                this.responses.populate(this.current).show();
-            }, this),
-            cancelListener = bind(function() {
-                this.menu.hide();
-                this.current = this.back.pop();
-                this.responses.show();
-            }, this),
-            newSearchListener = bind(function () {
-                this.back.push(this.current);
-                this.responses.hide();
-                this.menu.clear().show();
-            }, this),
-            editSearchListener = bind(function () {
-                this.back.push(this.current);
-                this.responses.hide();
-                this.menu.populate(this.current).show();
-            }, this),
-            backListener = bind(function () {
-                this.forward.push(this.current);
-                this.current = this.back.pop();
-                this.responses.populate(this.current);
-            }, this),
-            forwardListener = bind(function () {
-                this.back.push(this.current);
-                this.current = this.forward.pop();
-                this.responses.populate(this.current);
-            }, this);
-
-        this.cancels = new Multiview("expertise-cancel");
-        this.back = new NavigatorButton("expertise-back");
-        this.forward = new NavigatorButton("expertise-forward");
-        this.explanation = new View("expertise-explanation");
-        this.menu = new Menu("expertise-menu");
-        this.responses = new Responses(xmlDocument, "expertise-responses");
-
-        each(toButtons["expertise-apply"], function (button) {
-            listener(button, "click", applyListener);
-        });
-        each(toButtons["expertise-cancel"], function (button) {
-            listener(button, "click", cancelListener);
-        });
-        each(toButtons["expertise-new-search"], function (button) {
-            listener(button, "click", newSearchListener);
-        });
-        each(toButtons["expertise-edit-search"], function (button) {
-            listener(button, "click", editSearchListener);
-        });
-        each(toButtons["expertise-back"], function (button) {
-            listener(button, "click", backListener);
-        });
-        each(toButtons["expertise-forward"], function (button) {
-            listener(button, "click", forwardListener);
-        });
-    }
-
-    Controller.prototype.initialize = function () {
-        this.back.clear();
-        this.forward.clear();
-        this.cancels.hide();  // Hide for first search.
-        this.responses.hide();
-        this.explanation.show();
-        this.menu.clear().show();
-    };
-
-    //==========================================================================
-    //                            NAVIGATOR BUTTON
-    //==========================================================================
-
-    function NavigatorButton(id) {
-        View.call(this, id);
-        this.stack = [];
-    }
-
-    NavigatorButton.prototype = new View();
-
-    NavigatorButton.prototype.push = function (datum) {
-        this.stack.push(datum);
-        return this.show();
-    };
-
-    NavigatorButton.prototype.pop = function () {
-        var datum = this.stack.pop();
-
-        this.showIff(this.stack.length  > 0);
-        return datum;
-    };
-
-    NavigatorButton.prototype.concat = function (other) {
-        this.stack = this.stack.concat(other.stack);
-        return this.showIff(this.stack.length  > 0);
-    };
-
-    NavigatorButton.prototype.clear = function () {
-        this.stack = [];
-        return this.hide();
-    };
-
-    //==========================================================================
-    //                                  MENU
-    //==========================================================================
-
-    function Menu(id) {
-        function complex(key, dependents, listener) {
-            var view = new CheckboxComplex(
-                    key + "Checkbox", key, group(key, dependents));
-
-            view.listener("change", listener);
-            return view;
-        }
-
-        function group(key, dependents, listener) {
-            return new CheckboxGroup(key + "Dependents",
-                map(dependents, function (key) {
-                    return simple(key, listener);
-                }));
-        }
-
-        function simple(key, listener) {
-            var view = new Checkbox(key + "Checkbox", key);
-
-            view.listener("change", listener);
-            return view;
-        }
-
-        var checkboxListener = bind(function () {
-                var properties = this.properties();
-
-                this.applies.update(properties);
-                this.clears.update(properties);
-            }, this),
-            clearListener = bind(function () {
-                this.clear();
-            }, this),
-            helpListener = bind(function () {
-                this.help.toggle();
-            }, this);
-
-        CheckboxGroup.call(this, id,
-            reduce(toDependents, function (list, dependents, key) {
-                list.push(complex(key, dependents, checkboxListener));
-                return list;
-            }, []));
-        this.applies = new PopulationSensitive("expertise-apply");
-        this.clears = new PopulationSensitive("expertise-clear");
-        this.help = new View("expertise-menu-help");
-
-        each(toButtons["expertise-clear"], function (button) {
-            listener(button, "click", clearListener);
-        });
-        each(toButtons["expertise-menu-help"], function (button) {
-            listener(button, "click", helpListener);
-        });
-    }
-
-    Menu.prototype = new CheckboxGroup();
-
-    Menu.prototype.hide = function () {
-        this.help.hide();
-        return View.prototype.hide.call(this);
-    };
-
-    Menu.prototype.populate = function (properties) {
-        this.applies.update(properties);
-        this.clears.update(properties);
-        CheckboxGroup.prototype.populate.call(this, properties);
-        return this;
-    };
-
-    Menu.prototype.clear = function () {
-        return this.populate(alwaysTrue);
-    };
-
-    Menu.prototype.properties = function () {
-        return extend(
-            CheckboxGroup.prototype.properties.call(this), alwaysTrue);
-    };
-
-    //==========================================================================
-    //                               RESPONSES
-    //==========================================================================
-
-    function Responses(xmlDocument, id) {
-        var helpListener = bind(function () {
-                this.help.toggle();
-            }, this);
-
-        View.call(this, id);
-        this.help = new View("expertise-responses-help");
-        this.container = new View("expertise-responses-container");
-        this.summary = new Summary("expertise-responses-summary");
-        this.matches = new Matches("expertise-responses-matches");
-        this.responses = map(xmlDocument.getElementsByTagName("Response"),
-            function (xmlResponse) {
-                return new Response(xmlResponse);
-            }).sort(function (response1, response2) {
-                return response1.compare(response2);
-            });
-
-        each(toButtons["expertise-responses-help"], function (button) {
-            listener(button, "click", helpListener);
-        });
-        // This catches clicks on the "SHOW MORE" and "SHOW LESS" buttons.
-        this.container.listener("click", moreLessListener);
-    }
-
-    Responses.prototype = new View();
-
-    Responses.prototype.hide = function () {
-        this.help.hide();
-        return View.prototype.hide.call(this);
-    };
-
-    Responses.prototype.populate = function (properties) {
-        var responses = this.filter(properties);
-
-        this.matches.update(responses.length);
-        this.summary.showIff(properties);
-        this.container.fill(this.html(responses));
-        return this;
-    };
-
-    Responses.prototype.filter = function (properties) {
-        return filter(this.responses, function (response) {
-            return response.contains(properties);
-        });
-    };
-
-    Responses.prototype.html = function (responses) {
-        return reduce(responses, function (html, response) {
-            return html + response.html();
-        }, "");
-    };
-
-    //==========================================================================
     //                                SUMMARY
     //==========================================================================
 
@@ -1516,20 +1366,6 @@ CoSS.exprt = (function (my, window) {
     }
 
     Summary.prototype = new GroupView();
-
-    //==========================================================================
-    //                                MATCHES
-    //==========================================================================
-
-    function Matches(id) {
-        View.call(this, id);
-    }
-
-    Matches.prototype = new View();
-
-    Matches.prototype.update = function (n) {
-        this.fill("" + n + " match" + (n === 1 ? "" : "es"));
-    };
 
     //==========================================================================
     //                                RESPONSE
@@ -1755,6 +1591,139 @@ CoSS.exprt = (function (my, window) {
             }
         }
     }
+
+    //==========================================================================
+    //                               RESPONSES
+    //==========================================================================
+
+    function Responses(xmlDocument, id) {
+        var helpListener = bind(function () {
+                this.help.toggle();
+            }, this);
+
+        View.call(this, id);
+        this.help = new View("expertise-responses-help");
+        this.container = new View("expertise-responses-container");
+        this.summary = new Summary("expertise-responses-summary");
+        this.matches = new View("expertise-responses-matches");
+        this.responses = map(xmlDocument.getElementsByTagName("Response"),
+            function (xmlResponse) {
+                return new Response(xmlResponse);
+            }).sort(function (response1, response2) {
+                return response1.compare(response2);
+            });
+
+        each(toButtons["expertise-responses-help"], function (button) {
+            listener(button, "click", helpListener);
+        });
+        // This catches clicks on the "SHOW MORE" and "SHOW LESS" buttons.
+        this.container.listener("click", moreLessListener);
+    }
+
+    Responses.prototype = new View();
+
+    Responses.prototype.hide = function () {
+        this.help.hide();
+        return View.prototype.hide.call(this);
+    };
+
+    Responses.prototype.populate = function (properties) {
+        var responses = this.filter(properties),
+            matches = responses.length;
+
+        this.matches.fill("" + matches +
+            " match" + (matches === 1 ? "" : "es"));
+        this.summary.showIff(properties);
+        this.container.fill(this.html(responses));
+        return this;
+    };
+
+    Responses.prototype.filter = function (properties) {
+        return filter(this.responses, function (response) {
+            return response.contains(properties);
+        });
+    };
+
+    Responses.prototype.html = function (responses) {
+        return reduce(responses, function (html, response) {
+            return html + response.html();
+        }, "");
+    };
+
+    //==========================================================================
+    //                               CONTROLLER
+    //==========================================================================
+
+    function Controller(xmlDocument) {
+        var applyListener = bind(function() {
+                this.back.concat(this.forward);
+                this.forward.clear();
+                this.current = this.menu.hide().properties();
+                this.cancels.show();      // First search must be over, so show.
+                this.explanation.hide();  // Hide after first search.
+                this.responses.populate(this.current).show();
+            }, this),
+            cancelListener = bind(function() {
+                this.menu.hide();
+                this.current = this.back.pop();
+                this.responses.show();
+            }, this),
+            newSearchListener = bind(function () {
+                this.back.push(this.current);
+                this.responses.hide();
+                this.menu.clear().show();
+            }, this),
+            editSearchListener = bind(function () {
+                this.back.push(this.current);
+                this.responses.hide();
+                this.menu.populate(this.current).show();
+            }, this),
+            backListener = bind(function () {
+                this.forward.push(this.current);
+                this.current = this.back.pop();
+                this.responses.populate(this.current);
+            }, this),
+            forwardListener = bind(function () {
+                this.back.push(this.current);
+                this.current = this.forward.pop();
+                this.responses.populate(this.current);
+            }, this);
+
+        this.cancels = new Multiview("expertise-cancel");
+        this.back = new NavigatorButton("expertise-back");
+        this.forward = new NavigatorButton("expertise-forward");
+        this.explanation = new View("expertise-explanation");
+        this.menu = new Menu("expertise-menu");
+        this.responses = new Responses(xmlDocument, "expertise-responses");
+
+        each(toButtons["expertise-apply"], function (button) {
+            listener(button, "click", applyListener);
+        });
+        each(toButtons["expertise-cancel"], function (button) {
+            listener(button, "click", cancelListener);
+        });
+        each(toButtons["expertise-new-search"], function (button) {
+            listener(button, "click", newSearchListener);
+        });
+        each(toButtons["expertise-edit-search"], function (button) {
+            listener(button, "click", editSearchListener);
+        });
+        each(toButtons["expertise-back"], function (button) {
+            listener(button, "click", backListener);
+        });
+        each(toButtons["expertise-forward"], function (button) {
+            listener(button, "click", forwardListener);
+        });
+    }
+
+    Controller.prototype.initialize = function () {
+        this.back.clear();
+        this.forward.clear();
+        this.cancels.hide();  // Hide for first search.
+        this.responses.hide();
+        this.explanation.show();
+        this.menu.clear().show();
+    };
 
     //==========================================================================
     //                                 EXPOSED
