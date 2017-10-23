@@ -713,15 +713,15 @@ CoSS.exprt = (function (my, window) {
                 });
                 return mapping;
             }, {
-                "expertise-apply": [],
-                "expertise-clear": [],
-                "expertise-cancel": [],
-                "expertise-new-search": [],
-                "expertise-edit-search" : [],
-                "expertise-back": [],
-                "expertise-forward": [],
-                "expertise-menu-help": [],
-                "expertise-responses-help": []
+                expertiseApply: [],
+                expertiseClear: [],
+                expertiseCancel: [],
+                expertiseNewSearch: [],
+                expertiseEditSearch : [],
+                expertiseBack: [],
+                expertiseForward: [],
+                expertiseMenuHelp: [],
+                expertiseResponsesHelp: []
             }),
         toSpans = reduce(document.getElementsByTagName("SPAN"),
             function (mapping, element) {
@@ -735,9 +735,9 @@ CoSS.exprt = (function (my, window) {
                 });
                 return mapping;
             }, {
-                "expertise-apply": [],
-                "expertise-clear": [],
-                "expertise-cancel": []
+                expertiseApply: [],
+                expertiseClear: [],
+                expertiseCancel: []
             }),
         alwaysTrue = {share: 1};
 
@@ -865,6 +865,10 @@ CoSS.exprt = (function (my, window) {
         return string.
             replace(/\s+/g, " ").       // run of blanks --> single space
             replace(/^\s+|\s+$/g, "");  // no blanks at extremities
+    }
+
+    function capitalize(string) {
+        return string.charAt(0).toUpperCase() + string.slice(1);
     }
 
     //--------------------------------------------------------------------------
@@ -1036,7 +1040,7 @@ CoSS.exprt = (function (my, window) {
      * Adds callback to element as a listener for events of type.
      * Returns this, to facilitate chaining.
      */
-    View.prototype.listener = function (type, callback) {
+    View.prototype.on = function (type, callback) {
         listener(this.element, type, callback);
         return this;
     };
@@ -1045,12 +1049,19 @@ CoSS.exprt = (function (my, window) {
     //                               MULTIVIEW
     //==========================================================================
 
+    /**
+     * Multiview is basically a View for multiple DOM elements. The elements
+     * are all spans selected by class name, using the toSpans mapping.
+     */
     function Multiview(name) {
         if (arguments.length > 0) {
-            this.elements = toSpans[name] || [];
+            this.elements = toSpans[name];
         }
     }
 
+    /**
+     * Hides all elements by adding the class "hide" to each. Returns this.
+     */
     Multiview.prototype.hide = function () {
         each(this.elements, function (element) {
             addClass(element, "hide");
@@ -1058,13 +1069,20 @@ CoSS.exprt = (function (my, window) {
         return this;
     };
 
-    Multiview.prototype.show = function () {
+    /**
+     * Shows all elements by removing the class "hide" from each. Returns this.
+     */
+   Multiview.prototype.show = function () {
         each(this.elements, function (element) {
             removeClass(element, "hide");
         });
         return this;
     };
 
+    /**
+     * Takes a single argument, condition. Shows all elements if
+     # condition holds. Otherwise hides them all. Returns this.
+     */
     Multiview.prototype.showIff = View.prototype.showIff;
 
     //==========================================================================
@@ -1086,18 +1104,22 @@ CoSS.exprt = (function (my, window) {
     NavigatorButton.prototype.pop = function () {
         var datum = this.stack.pop();
 
-        this.showIff(this.stack.length  > 0);
+        this.showIff(this.size()  > 0);
         return datum;
     };
 
     NavigatorButton.prototype.concat = function (other) {
         this.stack = this.stack.concat(other.stack);
-        return this.showIff(this.stack.length  > 0);
+        return this.showIff(this.size()  > 0);
     };
 
     NavigatorButton.prototype.clear = function () {
         this.stack = [];
         return this.hide();
+    };
+
+    NavigatorButton.prototype.size = function () {
+        return this.stack.length;
     };
 
     //==========================================================================
@@ -1108,7 +1130,7 @@ CoSS.exprt = (function (my, window) {
         if (arguments.length > 0) {
             View.call(this, id);
             this.key = key;
-            this.listener("change", callback);
+            this.on("change", callback);
         }
     }
 
@@ -1167,7 +1189,7 @@ CoSS.exprt = (function (my, window) {
         if (arguments.length > 0) {
             Checkbox.call(this, id, key, callback);
             this.group = group;
-            this.listener("change", bind(function () {
+            this.on("change", bind(function () {
                 // Repopulate group only if this checkbox is unchecked.
                 // I.e., the populate statement must be the second disjunct.
                 this.group.showIff(this.checked() ||
@@ -1215,10 +1237,10 @@ CoSS.exprt = (function (my, window) {
         }
 
         var checkboxListener = bind(function () {
-                var empty = contains(alwaysTrue, this.properties());
+                var nonempty = !contains(alwaysTrue, this.properties());
 
-                this.applies.showIff(!empty);
-                this.clears.showIff(!empty);
+                this.applies.showIff(nonempty);
+                this.clears.showIff(nonempty);
             }, this),
             clearListener = bind(function () {
                 this.clear();
@@ -1232,14 +1254,14 @@ CoSS.exprt = (function (my, window) {
                 list.push(complex(key, checkboxListener, dependents));
                 return list;
             }, []));
-        this.applies = new Multiview("expertise-apply");
-        this.clears = new Multiview("expertise-clear");
-        this.help = new View("expertise-menu-help");
+        this.applies = new Multiview("expertiseApply");
+        this.clears = new Multiview("expertiseClear");
+        this.help = new View("expertiseMenuHelp");
 
-        each(toButtons["expertise-clear"], function (button) {
+        each(toButtons.expertiseClear, function (button) {
             listener(button, "click", clearListener);
         });
-        each(toButtons["expertise-menu-help"], function (button) {
+        each(toButtons.expertiseMenuHelp, function (button) {
             listener(button, "click", helpListener);
         });
     }
@@ -1252,10 +1274,10 @@ CoSS.exprt = (function (my, window) {
     };
 
     Menu.prototype.populate = function (properties) {
-        var empty = contains(alwaysTrue, properties);
+        var nonempty = !contains(alwaysTrue, properties);
 
-        this.applies.showIff(!empty);
-        this.clears.showIff(!empty);
+        this.applies.showIff(nonempty);
+        this.clears.showIff(nonempty);
         CheckboxGroup.prototype.populate.call(this, properties);
         return this;
     };
@@ -1301,6 +1323,13 @@ CoSS.exprt = (function (my, window) {
     //                               GROUP VIEW
     //==========================================================================
 
+    /**
+     * A GroupView is a View with a list of key bearing children. In the Dom,
+     * the GroupView's element should contain the elements of its children.
+     * The idea is that the GroupView's element is going to want to be hidden
+     * iff every element it contains is hidden. E.g., hide a ul iff every li
+     * it contains is hidden.
+     */
     function GroupView(id, children) {
         if (arguments.length > 0) {
             View.call(this, id);
@@ -1310,6 +1339,12 @@ CoSS.exprt = (function (my, window) {
 
     GroupView.prototype = new View();
 
+    /**
+     * Invokes showIff(properties) on all of the children, noting if any returns
+     * a truthy value, indicating that the child is shown. If at least one of
+     * the children is shown, shows its element and returns true; otherwise,
+     * hides its element and returns false.
+     */
     GroupView.prototype.showIff = function (properties) {
         var value = reduce(this.children, function (value, child) {
                 return child.showIff(properties) || value;
@@ -1323,6 +1358,9 @@ CoSS.exprt = (function (my, window) {
     //                              COMPLEX VIEW
     //==========================================================================
 
+    /**
+     * 
+     */
     function ComplexView(id, key, group) {
         if (arguments.length > 0) {
             KeyView.call(this, id, key);
@@ -1349,8 +1387,8 @@ CoSS.exprt = (function (my, window) {
 
         function group(key, dependents) {
             return new GroupView(key + "Sublist",
-                map(dependents, function (key) {
-                    return simple(key);
+                map(dependents, function (dependent) {
+                    return simple(dependent);
                 }));
         }
 
@@ -1430,26 +1468,35 @@ CoSS.exprt = (function (my, window) {
         // turns out to get the value 1, add the the key expertise with value 1.
         // Logically, the expertise key represents the disjunction of the
         // thematic keys.
-        each(toDependents, function(dependents, key1) {
-            if (some(dependents, function (key2) {
-                    return this[key2];
+        each(toDependents, function(dependents, key) {
+            if (some(dependents, function (dependent) {
+                    return this[dependent];
                 }, this)) {
-                this[key1] = 1;
+                this[key] = 1;
                 this.expertise = 1;
             }
         }, this);
 
-        // Add an alphabetiser based on the name which will have been provided
-        // in the xmlResponse and stored as this.name by the first loop above.
+        // Check that name and email have been provided in the xmlResponse and
+        // stored here by the first loop and that they are well-formed strings.
+        if (typeof this.name !== "string" || !/\S\s+\S/.test(this.name)) {
+            throw new Error("Not a first, last name string: " + this.name);
+        }
+        if (typeof this.email !== "string" ||
+            !/^\s*[\w\-\.]+@[\w\-\.]+\.[a-zA-Z]{2,5}\s*$/.test(this.email)) {
+            throw new Error("Not an email address string: " + this.email);
+        }
+
+        // Add an alphabetiser based on the name.
         this.alphabetizer = alphabetizer(this.name);
     }
 
     Response.prototype.getName = function () {
-        return trim(this.name || "&nbsp;");
+        return trim(this.name);
     };
 
     Response.prototype.getEmail = function () {
-        return trim(this.email || "&nbsp;").toLowerCase();
+        return trim(this.email).toLowerCase();
     };
 
     Response.prototype.getRank = function () {
@@ -1536,45 +1583,39 @@ CoSS.exprt = (function (my, window) {
     };
 
     Response.prototype.moreLessBlock = function () {
-        return this.expertise ?
+        return !this.expertise ? "" :
             '<div class="float-right">' +
             '<button id="more-' + this.id + '" class="more">SHOW MORE</button>' +
             '<button id="less-' + this.id + '" class="less">SHOW LESS</button>' +
-            "</div>" :
-            "";
+            "</div>";
     };
 
-    Response.prototype.expertiseBlock = (function () {
-        function existingGroups(callback, context) {
-            return reduce(toDependents,
-                function (html, dependents, key) {
-                    return html +
-                        (this[key] ? callback.call(this, key, dependents) : "");
-                }, "", context);
+    Response.prototype.expertiseBlock = function () {
+        function complex(response, key, dependents) {
+            return !response[key] ? "" :
+                "<p>" + toDescription[key] + "</p>" +
+                "<ul>" +
+                reduce(dependents, function (html, dependent) {
+                    return html + simple(this, dependent);
+                }, "", response) +
+                "</ul>";
         }
 
-        function existingKeys(collection, callback, context) {
-            return reduce(collection, function (html, key) {
-                return html + (this[key] ? callback.call(this, key) : "");
-            }, "", context);
+        function simple(response, key) {
+            return !response[key] ? "" :
+                "<li>" +
+                (toDescription[key] ||
+                    capitalize(trim(response[key + "Text"]))) +
+                "</li>";
         }
 
-        return function () {
-            return this.expertise ?
-                '<div class="expertise clear nowrap">' +
-                existingGroups(function (key1, dependents) {
-                    return "<p>" + toDescription[key1] + "</p>" +
-                        "<ul>" +
-                        existingKeys(dependents, function (key2) {
-                            return "<li>" + (toDescription[key2] ||
-                                this[key2 + "Text"]) + "</li>";
-                        }, this) +
-                        "</ul>";
-                }, this) +
-                "</div>" :
-                "";
-        };
-    }());
+        return !this.expertise ? "" :
+            '<div class="expertise clear nowrap">' +
+            reduce(toDependents, function (html, dependents, key) {
+                return html + complex(this, key, dependents);
+            }, "", this) +
+            "</div>";
+    };
 
     function moreLessListener(event) {
         event = event || window.event;
@@ -1602,10 +1643,11 @@ CoSS.exprt = (function (my, window) {
             }, this);
 
         View.call(this, id);
-        this.help = new View("expertise-responses-help");
+        this.help = new View("expertiseResponsesHelp");
         this.container = new View("expertise-responses-container");
         this.summary = new Summary("expertise-responses-summary");
-        this.matches = new View("expertise-responses-matches");
+        this.searchNumber = new View("expertiseSearchNumber");
+        this.matches = new View("expertiseResponsesMatches");
         this.responses = map(xmlDocument.getElementsByTagName("Response"),
             function (xmlResponse) {
                 return new Response(xmlResponse);
@@ -1613,11 +1655,11 @@ CoSS.exprt = (function (my, window) {
                 return response1.compare(response2);
             });
 
-        each(toButtons["expertise-responses-help"], function (button) {
+        each(toButtons.expertiseResponsesHelp, function (button) {
             listener(button, "click", helpListener);
         });
         // This catches clicks on the "SHOW MORE" and "SHOW LESS" buttons.
-        this.container.listener("click", moreLessListener);
+        this.container.on("click", moreLessListener);
     }
 
     Responses.prototype = new View();
@@ -1627,10 +1669,11 @@ CoSS.exprt = (function (my, window) {
         return View.prototype.hide.call(this);
     };
 
-    Responses.prototype.populate = function (properties) {
+    Responses.prototype.populate = function (properties, priorSearches) {
         var responses = this.filter(properties),
             matches = responses.length;
 
+        this.searchNumber.fill("" + (priorSearches + 1));
         this.matches.fill("" + matches +
             " match" + (matches === 1 ? "" : "es"));
         this.summary.showIff(properties);
@@ -1661,7 +1704,7 @@ CoSS.exprt = (function (my, window) {
                 this.current = this.menu.hide().properties();
                 this.cancels.show();      // First search must be over, so show.
                 this.explanation.hide();  // Hide after first search.
-                this.responses.populate(this.current).show();
+                this.responses.populate(this.current, this.back.size()).show();
             }, this),
             cancelListener = bind(function() {
                 this.menu.hide();
@@ -1681,37 +1724,37 @@ CoSS.exprt = (function (my, window) {
             backListener = bind(function () {
                 this.forward.push(this.current);
                 this.current = this.back.pop();
-                this.responses.populate(this.current);
+                this.responses.populate(this.current, this.back.size());
             }, this),
             forwardListener = bind(function () {
                 this.back.push(this.current);
                 this.current = this.forward.pop();
-                this.responses.populate(this.current);
+                this.responses.populate(this.current, this.back.size());
             }, this);
 
-        this.cancels = new Multiview("expertise-cancel");
-        this.back = new NavigatorButton("expertise-back");
-        this.forward = new NavigatorButton("expertise-forward");
+        this.cancels = new Multiview("expertiseCancel");
+        this.back = new NavigatorButton("expertiseBack");
+        this.forward = new NavigatorButton("expertiseForward");
         this.explanation = new View("expertise-explanation");
         this.menu = new Menu("expertise-menu");
         this.responses = new Responses(xmlDocument, "expertise-responses");
 
-        each(toButtons["expertise-apply"], function (button) {
+        each(toButtons.expertiseApply, function (button) {
             listener(button, "click", applyListener);
         });
-        each(toButtons["expertise-cancel"], function (button) {
+        each(toButtons.expertiseCancel, function (button) {
             listener(button, "click", cancelListener);
         });
-        each(toButtons["expertise-new-search"], function (button) {
+        each(toButtons.expertiseNewSearch, function (button) {
             listener(button, "click", newSearchListener);
         });
-        each(toButtons["expertise-edit-search"], function (button) {
+        each(toButtons.expertiseEditSearch, function (button) {
             listener(button, "click", editSearchListener);
         });
-        each(toButtons["expertise-back"], function (button) {
+        each(toButtons.expertiseBack, function (button) {
             listener(button, "click", backListener);
         });
-        each(toButtons["expertise-forward"], function (button) {
+        each(toButtons.expertiseForward, function (button) {
             listener(button, "click", forwardListener);
         });
     }
