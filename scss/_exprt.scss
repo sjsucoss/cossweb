@@ -1,18 +1,15 @@
-.gray {
-    color: $gray;
-}
 
-#expertise-menu .dependents {
+#expertiseMenu .dependents {
     font-size: 87.5%;
 }
 
-.response {
+.expertiseResponse {
     padding-top: $medium;
     border-bottom-style: dotted;
     border-bottom-width: 1px;
 
     &.less {
-        & .expertise, & .less {
+        & .expertiseResponseExpertise, & .less {
             display: none;
         }
         .more {
@@ -26,8 +23,7 @@
 
     .highlight {
         color: $blue;
-        //font-family: $serif;
-        //font-style: italic;
+        font-family: $serif;
         font-weight: bold;
     }
 
@@ -42,10 +38,9 @@
     }
 }
 
-.expertise,
-.expertise-help,
-.expertise-summary,
-#expertise-collaboration-options {
+.expertiseResponseExpertise,
+.expertiseHelp,
+#expertiseResponsesSummary {
     margin: $medium 0;
     font-size: 87.5%;
 
@@ -58,20 +53,19 @@
     }
 }
 
-.expertise,
-.expertise-summary {
+.expertiseResponseExpertise,
+#expertiseResponsesSummary {
     ul {
         margin: 0 0 0 $large;
     }
 }
 
-.expertise-help,
-.expertise-summary,
-#expertise-collaboration-options {
+.expertiseHelp,
+#expertiseResponsesSummary {
     @include border-radius(15px);
 }
 
-.expertise-help {
+.expertiseHelp {
     padding: $large;
     background-color: $blue;
     color: $white;
@@ -85,8 +79,7 @@
     }
 }
 
-.expertise-summary,
-#expertise-collaboration-options {
+#expertiseResponsesSummary {
     padding: $medium $large;
     background-color: $light-blue;
     color: $blue;
@@ -98,17 +91,3 @@
         color: $blue;
     }
 }
-
-
-// expertise-search
-// expertise-back
-// expertise-forward
-// expertise-responses-help
-
-// expertise-responses
-// expertise-back-button
-// expertise-forward-button
-// expertise-responses-help
-// expertise-responses-summary
-// expertise-responses-matches
-

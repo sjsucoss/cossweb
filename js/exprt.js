@@ -638,28 +638,28 @@ CoSS.exprt = (function (my, window) {
             otherTechnicalSkillsGIS: "Geographic Information System (GIS)",
             otherTechnicalSkillsRemoteSensing: "Remote sensing",
 
-            grantWriting: "Grant Writing (e.g., important things to consider while writing a grant; what are reviewers looking for?; and what is the role of a project manager?) for the following funding agencies:",
-            grantWritingCDC: "CDC",
-            grantWritingContracts: "Contracts (e.g., for local start-up companies)",
-            grantWritingEPA: "EPA",
-            grantWritingNASA: "NASA",
-            grantWritingNEA: "NEA",
-            grantWritingNEH: "NEH",
-            grantWritingNIH: "NIH",
-            grantWritingNSF: "NSF",
-            grantWritingState: "State agencies",
-            grantWritingFederal: "Federal agencies",
-            grantWritingLocal: "Local governments",
+            grantWriting: "Grant Writing<!-- (e.g., important things to consider while writing a grant; what are reviewers looking for?; and what is the role of a project manager?) for the following funding agencies:-->",
+            grantWritingCDC: "For CDC",
+            grantWritingContracts: "For contracts (e.g., for local start-up companies)",
+            grantWritingEPA: "For EPA",
+            grantWritingNASA: "For NASA",
+            grantWritingNEA: "For NEA",
+            grantWritingNEH: "For NEH",
+            grantWritingNIH: "For NIH",
+            grantWritingNSF: "For NSF",
+            grantWritingState: "For state agencies",
+            grantWritingFederal: "For federal agencies",
+            grantWritingLocal: "For local governments",
             grantWritingUniversity: "Internal university and/or college",
 
-            proposalReview: "Proposal Review for the Following Funding Agencies:",
-            proposalReviewCDC: "CDC",
-            proposalReviewEPA: "EPA",
-            proposalReviewNASA: "NASA",
-            proposalReviewNEA: "NEA",
-            proposalReviewNEH: "NEH",
-            proposalReviewNIH: "NIH",
-            proposalReviewNSF: "NSF",
+            proposalReview: "Proposal Review<!-- for the Following Funding Agencies:-->",
+            proposalReviewCDC: "For CDC",
+            proposalReviewEPA: "For EPA",
+            proposalReviewNASA: "For NASA",
+            proposalReviewNEA: "For NEA",
+            proposalReviewNEH: "For NEH",
+            proposalReviewNIH: "For NIH",
+            proposalReviewNSF: "For NSF",
 
             fellowship: "Fellowships*",
             fellowshipCASBS: "Center for Advanced Study and Behavioral Sciences at Stanford",
@@ -1556,7 +1556,8 @@ CoSS.exprt = (function (my, window) {
     Response.prototype.html = function () {
         if (!this.cache) {
             this.cache =
-                '<div id="' + this.id + '" class="response nowrap less">' +
+                '<div id="' + this.id +
+                    '" class="expertiseResponse nowrap less">' +
                 this.nameEmailBlock() +
                 this.rankDepartmentBlock() +
                 this.expertiseBlock() +
@@ -1605,12 +1606,12 @@ CoSS.exprt = (function (my, window) {
             return !response[key] ? "" :
                 "<li>" +
                 (toDescription[key] ||
-                    capitalize(trim(response[key + "Text"]))) +
+                    capitalize(trim(response[key + "Text"] || "Other"))) +
                 "</li>";
         }
 
         return !this.expertise ? "" :
-            '<div class="expertise clear nowrap">' +
+            '<div class="expertiseResponseExpertise clear nowrap">' +
             reduce(toDependents, function (html, dependents, key) {
                 return html + complex(this, key, dependents);
             }, "", this) +
@@ -1644,8 +1645,8 @@ CoSS.exprt = (function (my, window) {
 
         View.call(this, id);
         this.help = new View("expertiseResponsesHelp");
-        this.container = new View("expertise-responses-container");
-        this.summary = new Summary("expertise-responses-summary");
+        this.container = new View("expertiseResponsesContainer");
+        this.summary = new Summary("expertiseResponsesSummary");
         this.searchNumber = new View("expertiseSearchNumber");
         this.matches = new View("expertiseResponsesMatches");
         this.responses = map(xmlDocument.getElementsByTagName("Response"),
@@ -1735,9 +1736,9 @@ CoSS.exprt = (function (my, window) {
         this.cancels = new Multiview("expertiseCancel");
         this.back = new NavigatorButton("expertiseBack");
         this.forward = new NavigatorButton("expertiseForward");
-        this.explanation = new View("expertise-explanation");
-        this.menu = new Menu("expertise-menu");
-        this.responses = new Responses(xmlDocument, "expertise-responses");
+        this.explanation = new View("expertiseExplanation");
+        this.menu = new Menu("expertiseMenu");
+        this.responses = new Responses(xmlDocument, "expertiseResponses");
 
         each(toButtons.expertiseApply, function (button) {
             listener(button, "click", applyListener);
@@ -1762,9 +1763,9 @@ CoSS.exprt = (function (my, window) {
     Controller.prototype.initialize = function () {
         this.back.clear();
         this.forward.clear();
-        this.cancels.hide();  // Hide for first search.
+        this.cancels.hide();      // Hide for first search.
         this.responses.hide();
-        this.explanation.show();
+        this.explanation.show();  // Show for first search.
         this.menu.clear().show();
     };
 
