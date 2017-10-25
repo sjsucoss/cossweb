@@ -701,6 +701,33 @@ CoSS.exprt = (function (my, window) {
             irbIacucHumanSubjectsDeception: "Human subjects research involving deception",
             irbIacucIacucApplication: "IACUC application"
         },
+        toOtherText = {
+            bookOther: "bookOtherText",
+            journalOther: "journalOtherText",
+            manuscriptPeerReviewOther: "manuscriptPeerReviewOtherText",
+            opEdOther: "opEdOtherText",
+            bookReviewOther: "bookReviewOtherText",
+            journalEditorOther: "journalEditorOtherText",
+            quantMethodsStatsOther: "quantMethodsStatsOtherText",
+            quantMethodsResearchOther: "quantMethodsResearchOtherText",
+            quantMethodsSoftwareOther: "quantMethodsSoftwareOtherText",
+            qualMethodsResearchOther: "qualMethodsResearchOtherText",
+            qualMethodsSoftwareOther: "qualMethodsSoftwareOtherText",
+            participatoryMethodsOther: "participatoryMethodsOtherText",
+            surveyDesignOther: "surveyDesignOtherText",
+            performanceOther: "performanceOtherText",
+            documentaryOther: "documentaryOtherText",
+            exhibitionOther: "exhibitionOtherText",
+            otherMethodsOther: "otherMethodsOtherText",
+            otherTechnicalSkillsOther: "otherTechnicalSkillsOtherText",
+            grantWritingOther: "grantWritingOtherText",
+            proposalReviewOther: "proposalReviewOtherText",
+            fellowshipOther: "fellowshipOtherText",
+            rscaProjectOther: "rscaProjectOtherText",
+            conferenceOther: "conferenceOtherText",
+            studentResearchOther: "studentResearchOtherText",
+            irbIacucOther: "irbIacucOtherText"
+        },
         toButtons = reduce(document.getElementsByTagName("BUTTON"),
             function (mapping, element) {
                 each(mapping, function (elements, name) {
@@ -1453,6 +1480,18 @@ CoSS.exprt = (function (my, window) {
             // is falsy!
             if (key && value) {
                 this[key] = parseValue(value);
+            }
+        }, this);
+
+        // Some responses have a truthy value for an "...Other" key but lack a
+        // corresponding "...OtherText" entry. This may be due to errors in
+        // editing the data file, when an attempt was made to remove cases
+        // where people selected "Other" and wrote in "None" as explanatory
+        // text. Whatever the source of these cases, it is best to get rid of
+        // them.
+        each(toOtherText, function (otherText, other) {
+            if (this[other] && !this[otherText]) {
+                delete this[other];
             }
         }, this);
 
