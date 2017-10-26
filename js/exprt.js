@@ -1336,14 +1336,15 @@ CoSS.exprt = (function (my, window) {
     KeyView.prototype = new View();
 
     /**
-     * Shows element iff key retrieves a truthy value from properties.
-     * Returns that value, rather than returning this, as with a basic View.
+     * Shows element iff key retrieves a truthy value from properties. Rather
+     * than returning this, as with a basic View, returns 1 if retrieved value
+     * was truth; otherwise returns 0.
      */
     KeyView.prototype.showIff = function (properties) {
-        var value = properties[this.key];
+        var count = properties[this.key] ? 1 : 0;
 
-        View.prototype.showIff.call(this, value);
-        return value;
+        View.prototype.showIff.call(this, count);
+        return count;
     };
 
     //==========================================================================
@@ -1367,27 +1368,25 @@ CoSS.exprt = (function (my, window) {
     GroupView.prototype = new View();
 
     /**
-     * Invokes showIff(properties) on all of the children, noting if any returns
-     * a truthy value, indicating that the child is shown. If at least one of
-     * the children is shown, shows its element and returns true; otherwise,
-     * hides its element and returns false.
+     * Invokes showIff(properties) on all of the children, counting how many
+     * are shown. If at least one of the children is shown, shows its element;
+     * otherwise, hides its element. Returns the count, which can be treated
+     * as an actual count or as a quasi-boolean, since 0 is falsy, and other
+     * numbers are truthy.
      */
     GroupView.prototype.showIff = function (properties) {
-        var value = reduce(this.children, function (value, child) {
-                return child.showIff(properties) || value;
-            }, false);
+        var count = reduce(this.children, function (count, child) {
+                return count + child.showIff(properties);
+            }, 0);
 
-        View.prototype.showIff.call(this, value);
-        return value;
+        View.prototype.showIff.call(this, count > 0);
+        return count;
     };
 
     //==========================================================================
     //                              COMPLEX VIEW
     //==========================================================================
 
-    /**
-     * 
-     */
     function ComplexView(id, key, group) {
         if (arguments.length > 0) {
             KeyView.call(this, id, key);
@@ -1398,9 +1397,8 @@ CoSS.exprt = (function (my, window) {
     ComplexView.prototype = new KeyView();
 
     ComplexView.prototype.showIff = function (properties) {
-        var value = this.group.showIff(properties);
-
-        return KeyView.prototype.showIff.call(this, properties) || value;
+        return this.group.showIff(properties) +
+            KeyView.prototype.showIff.call(this, properties);
     };
 
     //==========================================================================
@@ -1488,7 +1486,7 @@ CoSS.exprt = (function (my, window) {
         // editing the data file, when an attempt was made to remove cases
         // where people selected "Other" and wrote in "None" as explanatory
         // text. Whatever the source of these cases, it is best to get rid of
-        // them.
+        // them by deleting the "...Other" key.
         each(toOtherText, function (otherText, other) {
             if (this[other] && !this[otherText]) {
                 delete this[other];
@@ -1645,7 +1643,7 @@ CoSS.exprt = (function (my, window) {
             return !response[key] ? "" :
                 "<li>" +
                 (toDescription[key] ||
-                    capitalize(trim(response[key + "Text"] || "Other"))) +
+                    capitalize(trim(response[key + "Text"]))) +
                 "</li>";
         }
 
