@@ -17,8 +17,8 @@ CoSS.exprt = (function (my, window) {
         toKey = {
             ResponseID: "id",
 
-            Q2: "email",
-            Q3: "name",
+            Q2: "emailText",
+            Q3: "nameText",
             Q4: "share",
             Q52: "rank",
             Q52_TEXT: "rankText",
@@ -903,8 +903,8 @@ CoSS.exprt = (function (my, window) {
     //--------------------------------------------------------------------------
 
     function alphabetizer(name) {
-        var pattern = /^(.+?) ((?:(?:de(?: la)?|dei|del|della|des|di|du|la|le|les|lo|van(?: de(?:n|r))?|von) )?\S+)$/,
-            match = pattern.exec(trim(name).toLowerCase());
+        var match = /^(.+?) ((?:(?:de(?: la)?|dei|del|della|des|di|du|la|le|les|lo|van(?: de(?:n|r))?|von) )?\S+)$/.
+                exec(name.toLowerCase());
 
         if (!match) {
             throw new Error("Could not parse name: " + name);
@@ -1343,7 +1343,7 @@ CoSS.exprt = (function (my, window) {
     KeyView.prototype.showIff = function (properties) {
         var count = properties[this.key] ? 1 : 0;
 
-        View.prototype.showIff.call(this, count);
+        View.prototype.showIff.call(this, count > 0);
         return count;
     };
 
@@ -1352,7 +1352,7 @@ CoSS.exprt = (function (my, window) {
     //==========================================================================
 
     /**
-     * A GroupView is a View with a list of key bearing children. In the Dom,
+     * A GroupView is a View with a list of key bearing children. In the DOM,
      * the GroupView's element should contain the elements of its children.
      * The idea is that the GroupView's element is going to want to be hidden
      * iff every element it contains is hidden. E.g., hide a ul iff every li
@@ -1447,7 +1447,7 @@ CoSS.exprt = (function (my, window) {
         // Go through the element children of node. These children will have an
         // XML form along the following lines:
         //
-        // <key>value</key>          (The value is frequently empty.)
+        // <key>value</key>          (The value is frequently empty: <key />)
         //
         // The string "key" is accessible via the nodeName attribute. The string
         // "value" can be accessed via the textContent attribute, or the
@@ -1481,6 +1481,7 @@ CoSS.exprt = (function (my, window) {
             }
         }, this);
 
+        // Fix some potential problems:
         // Some responses have a truthy value for an "...Other" key but lack a
         // corresponding "...OtherText" entry. This may be due to errors in
         // editing the data file, when an attempt was made to remove cases
@@ -1514,26 +1515,55 @@ CoSS.exprt = (function (my, window) {
             }
         }, this);
 
-        // Check that name and email have been provided in the xmlResponse and
-        // stored here by the first loop and that they are well-formed strings.
-        if (typeof this.name !== "string" || !/\S\s+\S/.test(this.name)) {
-            throw new Error("Not a first, last name string: " + this.name);
-        }
-        if (typeof this.email !== "string" ||
-            !/^\s*[\w\-\.]+@[\w\-\.]+\.[a-zA-Z]{2,5}\s*$/.test(this.email)) {
-            throw new Error("Not an email address string: " + this.email);
-        }
+        // Check that ID, name, and email are present, having been provided in
+        // the xmlResponse and stored here by the first loop, and that they are
+        // well-formed strings.
+        // if (typeof this.id !== "string" || this.id.length === 0) {
+        //     throw new Error("Not an ID string: " + this.id);
+        // }
+        // if (typeof this.name !== "string" || !/\S\s+\S/.test(this.name)) {
+        //     throw new Error("Not a first, last name string: " + this.name);
+        // }
+        // if (typeof this.email !== "string" ||
+        //     !/^\s*[\w\-\.]+@[\w\-\.]+\.[a-zA-Z]{2,5}\s*$/.test(this.email)) {
+        //     throw new Error("Not an email address string: " + this.email);
+        // }
 
         // Add an alphabetiser based on the name.
-        this.alphabetizer = alphabetizer(this.name);
+        // this.alphabetizer = alphabetizer(this.name);
     }
 
+    Response.prototype = new View();
+
     Response.prototype.getName = function () {
-        return trim(this.name);
+        var value = this.name;
+
+        if (!value) {
+            value = this.nameText;
+            if (typeof value !== "string") {
+                throw new TypeError("Not a string: " + value);
+            }
+            value = trim(this.nameText);
+            this.name = value;
+        }
+        return value;
     };
 
     Response.prototype.getEmail = function () {
-        return trim(this.email).toLowerCase();
+        var value = this.email;
+
+        if (!value) {
+            value = this.emailText;
+            if (typeof value !== "string") {
+                throw new TypeError("Not a string: " + value);
+            }
+            value = trim(value).toLowerCase();
+            if (!/^[\w\-\.]+@[\w\-\.]+\.[a-z]{2,5}$/.test(value)) {
+                throw new Error("Not an email address: " + value);
+            }
+            this.email = value;
+        }
+        return value;
     };
 
     Response.prototype.getRank = function () {
@@ -1582,8 +1612,19 @@ CoSS.exprt = (function (my, window) {
         return trim(this.departmentText || "&nbsp;");
     };
 
+    Response.prototype.getAlphabetizer = function () {
+        var value = this.alphabetizer;
+
+        if (!value) {
+            value = alphabetizer(this.getName());
+            this.alphabetizer = value;
+        }
+        return value;
+    };
+
     Response.prototype.compare = function (other) {
-        return alphabetizerCompare(this.alphabetizer, other.alphabetizer);
+        return alphabetizerCompare(
+            this.getAlphabetizer(), other.getAlphabetizer());
     };
 
     Response.prototype.contains = function(properties) {
@@ -1591,44 +1632,44 @@ CoSS.exprt = (function (my, window) {
     };
 
     Response.prototype.html = function () {
-        if (!this.cache) {
-            this.cache =
-                '<div id="' + this.id +
-                    '" class="expertiseResponse nowrap less">' +
-                this.nameEmailBlock() +
-                this.rankDepartmentBlock() +
-                this.expertiseBlock() +
+        function nameEmailBlock(response) {
+            var name = response.getName(),
+                email = response.getEmail();
+
+            return '<div class="nowrap wd-250 float-left">' +
+                '<p><span class="highlight">' + name + "</span><br />" +
+                '<a href="mailto:' + email + '">' + email + "</a></p>" +
                 "</div>";
         }
-        return this.cache;
-    };
 
-    Response.prototype.nameEmailBlock = function () {
-        var email = this.getEmail();
+        function rankDepartmentBlock(response, id) {
+            var rank = response.getRank(),
+                dept = response.getDepartment();
 
-        return '<div class="nowrap wd-250 float-left">' +
-            '<p><span class="highlight">' + this.getName() + "</span><br />" +
-            '<a href="mailto:' + email + '">' + email + "</a></p>" +
-            "</div>";
-    };
+            return '<div class="nowrap wd-390 float-right">' +
+                moreLessBlock(response, id) +
+                "<p>" + rank + "<br />" + dept + "</p>" +
+                "</div>";
+        }
 
-    Response.prototype.rankDepartmentBlock = function () {
-        return '<div class="nowrap wd-390 float-right">' +
-            this.moreLessBlock() +
-            "<p>" + this.getRank() + "<br />" +
-            this.getDepartment() + "</p>" +
-            "</div>";
-    };
+        function moreLessBlock(response, id) {
+            return !response.expertise ? "" :
+                '<div class="float-right">' +
+                '<button id="more' + id + '">SHOW MORE</button>' +
+                '<button id="less' + id + '" class="hide">SHOW LESS</button>' +
+                "</div>";
+        }
 
-    Response.prototype.moreLessBlock = function () {
-        return !this.expertise ? "" :
-            '<div class="float-right">' +
-            '<button id="more-' + this.id + '" class="more">SHOW MORE</button>' +
-            '<button id="less-' + this.id + '" class="less">SHOW LESS</button>' +
-            "</div>";
-    };
+        function expertiseBlock(response, id) {
+            return !response.expertise ? "" :
+                '<div id="expertise' + id +
+                '" class="expertiseResponseExpertise clear nowrap hide">' +
+                reduce(toDependents, function (html, dependents, key) {
+                    return html + complex(this, key, dependents);
+                }, "", response) +
+                "</div>";
+        }
 
-    Response.prototype.expertiseBlock = function () {
         function complex(response, key, dependents) {
             return !response[key] ? "" :
                 "<p>" + toDescription[key] + "</p>" +
@@ -1647,57 +1688,136 @@ CoSS.exprt = (function (my, window) {
                 "</li>";
         }
 
-        return !this.expertise ? "" :
-            '<div class="expertiseResponseExpertise clear nowrap">' +
-            reduce(toDependents, function (html, dependents, key) {
-                return html + complex(this, key, dependents);
-            }, "", this) +
+        var id = this.id;
+
+        return '<div id="' + id + '" class="expertiseResponse nowrap">' +
+            nameEmailBlock(this) +
+            rankDepartmentBlock(this, id) +
+            expertiseBlock(this, id) +
             "</div>";
+
     };
 
-    function moreLessListener(event) {
-        event = event || window.event;
+    Response.prototype.toView = function () {
+        var id = this.id;
 
-        var target = event.target || event.srcElement, match, div;
-
-        if (target && target.id) {
-            match = /^(more|less)\-(.+?)$/.exec(target.id);
-            if (match) {
-                div = document.getElementById(match[2]);
-                if (div) {
-                    (match[1] === "more" ? removeClass : addClass)(div, "less");
-                }
-            }
+        View.call(this, id);
+        if (this.expertise) {
+            this.more = new View("more" + id);
+            this.less = new View("less" + id);
+            this.extra = new View("expertise" + id);
+            this.more.on("click", bind(function () {
+                this.showMore();
+            }, this));
+            this.less.on("click", bind(function () {
+                this.showLess();
+            }, this));
         }
-    }
+        return this;
+    };
+
+    Response.prototype.showMore = function () {
+        if (this.expertise) {
+            this.more.hide();
+            this.less.show();
+            this.extra.show();
+        }
+    };
+
+    Response.prototype.showLess = function () {
+        if (this.expertise) {
+            this.less.hide();
+            this.extra.hide();
+            this.more.show();
+        }
+    };
+
+    Response.prototype.show = function () {
+        this.showLess();
+        return View.prototype.show.call(this);
+    };
+
+    Response.prototype.showIff = function (properties) {
+        var count = this.contains(properties) ? 1 : 0;
+
+        View.prototype.showIff.call(this, count > 0);
+        return count;
+    };
 
     //==========================================================================
     //                               RESPONSES
     //==========================================================================
 
     function Responses(xmlDocument, id) {
+        // This bit is not so obvious. The procedure falls into three stages:
+        function group(xmlDocument, id) {
+            // Stage 1:
+            // Create a list of responses from xmlDocument. Note that these
+            // responses are not views (yet). Pass the list of responses to
+            // GroupView to serve as the children of view. This temporarily
+            // gives us an anomalous state of affairs, because a GroupView
+            // expects its children to be views:
+            var responses =  order(cut(make(xmlDocument))),
+                view = new GroupView(id, responses);
+
+            // Stage 2:
+            // Use the list of responses to make a corresponding HTML
+            // expression, and make that the new content of the DOM element
+            // to which view is linked:
+            view.fill(html(responses));
+            // Stage 3:
+            // Go through the responses and transform them into views that
+            // point to DOM elements in the new content created in Stage 2.
+            each(responses, function (response) {
+                response.toView();
+            });
+            // Now view is a GroupView with children that are proper views.
+            return view;
+        }
+
+        // Returns a list of responses based on xmlDocument.
+        function make(xmlDocument) {
+            return map(xmlDocument.getElementsByTagName("Response"),
+                function (xmlResponse) {
+                    return new Response(xmlResponse);
+                });
+        }
+
+        // Cuts down responses by removing those for which alwaysTrue fails.
+        function cut(responses) {
+            return filter(responses, function (response) {
+                return response.contains(alwaysTrue);
+            });
+        }
+
+        // Puts responses into alphabetical order by name.
+        function order(responses) {
+            return responses.sort(function (response1, response2) {
+                return response1.compare(response2);
+            });
+        }
+
+        // Returns an HTML expression corresponding to responses.
+        function html(responses) {
+            return reduce(responses, function (html, response) {
+                return html + response.html();
+            }, "");
+        }
+
         var helpListener = bind(function () {
                 this.help.toggle();
             }, this);
 
         View.call(this, id);
-        this.help = new View("expertiseResponsesHelp");
-        this.container = new View("expertiseResponsesContainer");
+        this.container = group(xmlDocument, "expertiseResponsesContainer");
         this.summary = new Summary("expertiseResponsesSummary");
         this.searchNumber = new View("expertiseSearchNumber");
         this.matches = new View("expertiseResponsesMatches");
-        this.responses = map(xmlDocument.getElementsByTagName("Response"),
-            function (xmlResponse) {
-                return new Response(xmlResponse);
-            }).sort(function (response1, response2) {
-                return response1.compare(response2);
-            });
+        this.help = new View("expertiseResponsesHelp");
 
         each(toButtons.expertiseResponsesHelp, function (button) {
             listener(button, "click", helpListener);
         });
-        // This catches clicks on the "SHOW MORE" and "SHOW LESS" buttons.
-        this.container.on("click", moreLessListener);
     }
 
     Responses.prototype = new View();
@@ -1708,27 +1828,13 @@ CoSS.exprt = (function (my, window) {
     };
 
     Responses.prototype.populate = function (properties, priorSearches) {
-        var responses = this.filter(properties),
-            matches = responses.length;
+        var matches = this.container.showIff(properties);
 
-        this.searchNumber.fill("" + (priorSearches + 1));
-        this.matches.fill("" + matches +
-            " match" + (matches === 1 ? "" : "es"));
         this.summary.showIff(properties);
-        this.container.fill(this.html(responses));
+        this.searchNumber.fill((priorSearches + 1).toString());
+        this.matches.fill(matches.toString() +
+            " match" + (matches === 1 ? "" : "es"));
         return this;
-    };
-
-    Responses.prototype.filter = function (properties) {
-        return filter(this.responses, function (response) {
-            return response.contains(properties);
-        });
-    };
-
-    Responses.prototype.html = function (responses) {
-        return reduce(responses, function (html, response) {
-            return html + response.html();
-        }, "");
     };
 
     //==========================================================================
