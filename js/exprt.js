@@ -766,7 +766,8 @@ CoSS.exprt = (function (my, window) {
                 expertiseClear: [],
                 expertiseCancel: []
             }),
-        alwaysTrue = {share: 1};
+        alwaysTrue = {share: 1},
+        viewDecoratorMixin;
 
     //==========================================================================
     //                               UTILITIES
@@ -847,6 +848,12 @@ CoSS.exprt = (function (my, window) {
             accumulator = callback.call(this, accumulator, item, x, collection);
         }, context);
         return accumulator;
+    }
+
+    function sum(collection, callback, context) {
+        return reduce(collection, function (accumulator, item, x, collection) {
+            return accumulator + callback.call(this, item, x, collection);
+        }, 0, context);
     }
 
     function all(collection, callback, context) {
@@ -1005,12 +1012,10 @@ CoSS.exprt = (function (my, window) {
 
     /**
      * View provides basic functionality to an associated DOM element. The
-     * element is retrieved by id. Most objects used here inherit from View.
+     * element is retrieved by id.
      */
     function View(id) {
-        if (arguments.length > 0) {
-            this.element = document.getElementById(id);
-        }
+        this.element = document.getElementById(id);
     }
 
     /**
@@ -1040,10 +1045,17 @@ CoSS.exprt = (function (my, window) {
 
     /**
      * Shows element if condition holds and hides it if condition fails.
-     * Returns this, to facilitate chaining.
+     * Returns the number of elements shown, i.e. 0 or 1.
      */
     View.prototype.showIff = function (condition) {
-        return condition ? this.show() : this.hide();
+        var value = condition ? 1 : 0;
+
+        if (value > 0) {
+            this.show();
+        } else {
+            this.hide();
+        }
+        return value;
     };
 
     /**
@@ -1051,7 +1063,8 @@ CoSS.exprt = (function (my, window) {
      * Returns this, to facilitate chaining.
      */
     View.prototype.toggle = function () {
-        return this.showIff(this.hidden());
+        this.showIff(this.hidden());
+        return this;
     };
 
     /**
@@ -1072,6 +1085,53 @@ CoSS.exprt = (function (my, window) {
         return this;
     };
 
+    View.prototype.checked = function () {
+        return this.element.checked;
+    };
+
+    View.prototype.setChecked = function (value) {
+        this.element.checked = value;
+    };
+
+    //==========================================================================
+    //                          VIEW DECORATOR MIXIN
+    //==========================================================================
+
+    viewDecoratorMixin = {
+        hide: function () {
+            this.view.hide();
+            return this;
+        },
+        show: function () {
+            this.view.show();
+            return this;
+        },
+        hidden: function () {
+            return this.view.hidden();
+        },
+        showIff: function (condition) {
+            return this.view.showIff(condition);
+        },
+        toggle: function () {
+            this.view.toggle();
+            return this;
+        },
+        fill: function (html) {
+            this.view.fill(html);
+            return this;
+        },
+        on: function (type, callback) {
+            this.view.on(type, callback);
+            return this;
+        },
+        checked: function () {
+            return this.view.checked();
+        },
+        setChecked: function (value) {
+            this.view.setChecked(value);
+        }
+   };
+
     //==========================================================================
     //                               MULTIVIEW
     //==========================================================================
@@ -1081,9 +1141,7 @@ CoSS.exprt = (function (my, window) {
      * are all spans selected by class name, using the toSpans mapping.
      */
     function Multiview(name) {
-        if (arguments.length > 0) {
-            this.elements = toSpans[name];
-        }
+        this.elements = toSpans[name];
     }
 
     /**
@@ -1110,18 +1168,20 @@ CoSS.exprt = (function (my, window) {
      * Takes a single argument, condition. Shows all elements if
      # condition holds. Otherwise hides them all. Returns this.
      */
-    Multiview.prototype.showIff = View.prototype.showIff;
+    Multiview.prototype.showIff = function (condition) {
+        return condition ? this.show() : this.hide();
+    };
 
     //==========================================================================
     //                            NAVIGATOR BUTTON
     //==========================================================================
 
     function NavigatorButton(id) {
-        View.call(this, id);
+        this.view = new View(id);
         this.stack = [];
     }
 
-    NavigatorButton.prototype = new View();
+    extend(NavigatorButton.prototype, viewDecoratorMixin);
 
     NavigatorButton.prototype.push = function (datum) {
         this.stack.push(datum);
@@ -1137,7 +1197,8 @@ CoSS.exprt = (function (my, window) {
 
     NavigatorButton.prototype.concat = function (other) {
         this.stack = this.stack.concat(other.stack);
-        return this.showIff(this.size()  > 0);
+        this.showIff(this.size()  > 0);
+        return this;
     };
 
     NavigatorButton.prototype.clear = function () {
@@ -1154,23 +1215,17 @@ CoSS.exprt = (function (my, window) {
     //==========================================================================
 
     function Checkbox(id, key, callback) {
-        if (arguments.length > 0) {
-            View.call(this, id);
-            this.key = key;
-            this.on("change", callback);
-        }
+        this.view = new View(id);
+        this.key = key;
+        this.on("change", callback);
     }
 
-    Checkbox.prototype = new View();
-
-    Checkbox.prototype.checked = function () {
-        return this.element.checked;
-    };
+    extend(Checkbox.prototype, viewDecoratorMixin);
 
     Checkbox.prototype.populate = function (properties) {
         var value = !!properties[this.key];
 
-        this.element.checked = value;
+        this.setChecked(value);
         return value;
     };
 
@@ -1188,13 +1243,15 @@ CoSS.exprt = (function (my, window) {
     //==========================================================================
 
     function CheckboxGroup(id, children) {
-        if (arguments.length > 0) {
-            View.call(this, id);
-            this.children = children;
-        }
+        this.view = new View(id);
+        this.children = children || [];
     }
 
-    CheckboxGroup.prototype = new View();
+    extend(CheckboxGroup.prototype, viewDecoratorMixin);
+
+    CheckboxGroup.prototype.child = function (checkbox) {
+        this.children.push(checkbox);
+    };
 
     CheckboxGroup.prototype.populate = function (properties) {
         return reduce(this.children, function (exists, child) {
@@ -1213,22 +1270,20 @@ CoSS.exprt = (function (my, window) {
     //==========================================================================
 
     function CheckboxComplex(id, key, callback, group) {
-        if (arguments.length > 0) {
-            Checkbox.call(this, id, key, callback);
-            this.group = group;
-            this.on("change", bind(function () {
-                // Repopulate group only if this checkbox is unchecked.
-                // I.e., the populate statement must be the second disjunct.
-                this.group.showIff(this.checked() ||
-                    this.group.populate(alwaysTrue));
-            }, this));
-        }
+        this.view = new Checkbox(id, key, callback);
+        this.group = group;
+        this.on("change", bind(function () {
+            // Repopulate group only if this checkbox is unchecked.
+            // I.e., the populate statement must be the second disjunct.
+            this.group.showIff(this.checked() ||
+                this.group.populate(alwaysTrue));
+        }, this));
     }
 
-    CheckboxComplex.prototype = new Checkbox();
+    extend(CheckboxComplex.prototype, viewDecoratorMixin);
 
     CheckboxComplex.prototype.populate = function (properties) {
-        var value = Checkbox.prototype.populate.call(this, properties);
+        var value = this.view.populate(properties);
 
         // The form of the disjunction is designed to make sure that both
         // populate statements are invoked. The variable disjunct must be last.
@@ -1238,8 +1293,7 @@ CoSS.exprt = (function (my, window) {
     };
 
     CheckboxComplex.prototype.properties = function () {
-        return extend(
-            Checkbox.prototype.properties.call(this), this.group.properties());
+        return extend(this.view.properties(), this.group.properties());
     };
 
     //==========================================================================
@@ -1276,14 +1330,13 @@ CoSS.exprt = (function (my, window) {
                 this.help.toggle();
             }, this);
 
-        CheckboxGroup.call(this, id,
-            reduce(toDependents, function (list, dependents, key) {
-                list.push(complex(key, checkboxListener, dependents));
-                return list;
-            }, []));
         this.applies = new Multiview("expertiseApply");
         this.clears = new Multiview("expertiseClear");
         this.help = new View("expertiseMenuHelp");
+        this.view = new CheckboxGroup(id);
+        each(toDependents, function (dependents, key) {
+            this.view.child(complex(key, checkboxListener, dependents));
+        }, this);
 
         each(toButtons.expertiseClear, function (button) {
             listener(button, "click", clearListener);
@@ -1293,11 +1346,11 @@ CoSS.exprt = (function (my, window) {
         });
     }
 
-    Menu.prototype = new CheckboxGroup();
+    extend(Menu.prototype, viewDecoratorMixin);
 
     Menu.prototype.hide = function () {
         this.help.hide();
-        return View.prototype.hide.call(this);
+        return this.view.hide();
     };
 
     Menu.prototype.populate = function (properties) {
@@ -1305,7 +1358,7 @@ CoSS.exprt = (function (my, window) {
 
         this.applies.showIff(nonempty);
         this.clears.showIff(nonempty);
-        CheckboxGroup.prototype.populate.call(this, properties);
+        this.view.populate(properties);
         return this;
     };
 
@@ -1314,8 +1367,7 @@ CoSS.exprt = (function (my, window) {
     };
 
     Menu.prototype.properties = function () {
-        return extend(
-            CheckboxGroup.prototype.properties.call(this), alwaysTrue);
+        return extend(this.view.properties(), alwaysTrue);
     };
 
     //==========================================================================
@@ -1327,24 +1379,21 @@ CoSS.exprt = (function (my, window) {
      * from a properties object.
      */
     function KeyView(id, key) {
-        if (arguments.length > 0) {
-            View.call(this, id);
-            this.key = key;
-        }
+        this.view = new View(id);
+        this.key = key;
     }
 
-    KeyView.prototype = new View();
+    extend(KeyView.prototype, viewDecoratorMixin);
 
-    /**
-     * Shows element iff key retrieves a truthy value from properties. Rather
-     * than returning this, as with a basic View, returns 1 if retrieved value
-     * was truth; otherwise returns 0.
-     */
     KeyView.prototype.showIff = function (properties) {
-        var count = properties[this.key] ? 1 : 0;
+        var value = properties[this.key] ? 1 : 0;
 
-        View.prototype.showIff.call(this, count > 0);
-        return count;
+        if (value > 0) {
+            this.show();
+        } else {
+            this.hide();
+        }
+        return value;
     };
 
     //==========================================================================
@@ -1352,83 +1401,56 @@ CoSS.exprt = (function (my, window) {
     //==========================================================================
 
     /**
-     * A GroupView is a View with a list of key bearing children. In the DOM,
-     * the GroupView's element should contain the elements of its children.
-     * The idea is that the GroupView's element is going to want to be hidden
-     * iff every element it contains is hidden. E.g., hide a ul iff every li
-     * it contains is hidden.
+     * A GroupView combines a View with a list of children which are also Views.
+     * In the DOM, the GroupView's element should contain the elements of its
+     * children. The idea is that the GroupView's element is going to want to be
+     * hidden iff every element it contains is hidden. E.g., hide a ul iff every
+     * li it contains is hidden.
      */
     function GroupView(id, children) {
-        if (arguments.length > 0) {
-            View.call(this, id);
-            this.children = children;
-        }
+        this.view = new View(id);
+        this.children = children || [];
     }
 
-    GroupView.prototype = new View();
+    extend(GroupView.prototype, viewDecoratorMixin);
+
+    GroupView.prototype.child = function (view) {
+        this.children.push(view);
+    };
 
     /**
      * Invokes showIff(properties) on all of the children, counting how many
      * are shown. If at least one of the children is shown, shows its element;
-     * otherwise, hides its element. Returns the count, which can be treated
-     * as an actual count or as a quasi-boolean, since 0 is falsy, and other
-     * numbers are truthy.
+     * otherwise, hides its element. Returns the count of children shown.
      */
     GroupView.prototype.showIff = function (properties) {
-        var count = reduce(this.children, function (count, child) {
-                return count + child.showIff(properties);
-            }, 0);
+        var value = sum(this.children, function (child) {
+                return child.showIff(properties);
+            });
 
-        View.prototype.showIff.call(this, count > 0);
-        return count;
+        if (value > 0) {
+            this.show();
+        } else {
+            this.hide();
+        }
+        return value;
     };
+
 
     //==========================================================================
     //                              COMPLEX VIEW
     //==========================================================================
 
     function ComplexView(id, key, group) {
-        if (arguments.length > 0) {
-            KeyView.call(this, id, key);
-            this.group = group;
-        }
+        this.view = new KeyView(id, key);
+        this.group = group;
     }
 
-    ComplexView.prototype = new KeyView();
+    extend(ComplexView.prototype, viewDecoratorMixin);
 
     ComplexView.prototype.showIff = function (properties) {
-        return this.group.showIff(properties) +
-            KeyView.prototype.showIff.call(this, properties);
+        return this.view.showIff(properties) + this.group.showIff(properties);
     };
-
-    //==========================================================================
-    //                                SUMMARY
-    //==========================================================================
-
-    function Summary(id) {
-        function complex(key, dependents) {
-            return new ComplexView(key + "Item", key, group(key, dependents));
-        }
-
-        function group(key, dependents) {
-            return new GroupView(key + "Sublist",
-                map(dependents, function (dependent) {
-                    return simple(dependent);
-                }));
-        }
-
-        function simple(key) {
-            return new KeyView(key + "Item", key);
-        }
-
-        GroupView.call(this, id,
-            reduce(toDependents, function (list, dependents, key) {
-                list.push(complex(key, dependents));
-                return list;
-            }, []));
-    }
-
-    Summary.prototype = new GroupView();
 
     //==========================================================================
     //                                RESPONSE
@@ -1514,26 +1536,7 @@ CoSS.exprt = (function (my, window) {
                 this.expertise = 1;
             }
         }, this);
-
-        // Check that ID, name, and email are present, having been provided in
-        // the xmlResponse and stored here by the first loop, and that they are
-        // well-formed strings.
-        // if (typeof this.id !== "string" || this.id.length === 0) {
-        //     throw new Error("Not an ID string: " + this.id);
-        // }
-        // if (typeof this.name !== "string" || !/\S\s+\S/.test(this.name)) {
-        //     throw new Error("Not a first, last name string: " + this.name);
-        // }
-        // if (typeof this.email !== "string" ||
-        //     !/^\s*[\w\-\.]+@[\w\-\.]+\.[a-zA-Z]{2,5}\s*$/.test(this.email)) {
-        //     throw new Error("Not an email address string: " + this.email);
-        // }
-
-        // Add an alphabetiser based on the name.
-        // this.alphabetizer = alphabetizer(this.name);
     }
-
-    Response.prototype = new View();
 
     Response.prototype.getName = function () {
         var value = this.name;
@@ -1698,11 +1701,16 @@ CoSS.exprt = (function (my, window) {
 
     };
 
-    Response.prototype.toView = function () {
-        var id = this.id;
+    //==========================================================================
+    //                             RESPONSE VIEW
+    //==========================================================================
 
-        View.call(this, id);
-        if (this.expertise) {
+    function ResponseView(response) {
+        var id = response.id;
+
+        this.view = new View(id);
+        this.response = response;
+        if (response.expertise) {
             this.more = new View("more" + id);
             this.less = new View("less" + id);
             this.extra = new View("expertise" + id);
@@ -1713,35 +1721,38 @@ CoSS.exprt = (function (my, window) {
                 this.showLess();
             }, this));
         }
-        return this;
-    };
+    }
 
-    Response.prototype.showMore = function () {
-        if (this.expertise) {
-            this.more.hide();
-            this.less.show();
-            this.extra.show();
+    extend(ResponseView.prototype, viewDecoratorMixin);
+
+    ResponseView.prototype.show = function () {
+        if (this.response.expertise) {
+            this.showLess();
         }
+        return this.view.show();
     };
 
-    Response.prototype.showLess = function () {
-        if (this.expertise) {
-            this.less.hide();
-            this.extra.hide();
-            this.more.show();
+    ResponseView.prototype.showIff = function (properties) {
+        var value = this.response.contains(properties) ? 1 : 0;
+
+        if (value > 0) {
+            this.show();
+        } else {
+            this.hide();
         }
+        return value;
     };
 
-    Response.prototype.show = function () {
-        this.showLess();
-        return View.prototype.show.call(this);
+    ResponseView.prototype.showMore = function () {
+        this.more.hide();
+        this.less.show();
+        this.extra.show();
     };
 
-    Response.prototype.showIff = function (properties) {
-        var count = this.contains(properties) ? 1 : 0;
-
-        View.prototype.showIff.call(this, count > 0);
-        return count;
+    ResponseView.prototype.showLess = function () {
+        this.less.hide();
+        this.extra.hide();
+        this.more.show();
     };
 
     //==========================================================================
@@ -1749,32 +1760,6 @@ CoSS.exprt = (function (my, window) {
     //==========================================================================
 
     function Responses(xmlDocument, id) {
-        // This bit is not so obvious. The procedure falls into three stages:
-        function group(xmlDocument, id) {
-            // Stage 1:
-            // Create a list of responses from xmlDocument. Note that these
-            // responses are not views (yet). Pass the list of responses to
-            // GroupView to serve as the children of view. This temporarily
-            // gives us an anomalous state of affairs, because a GroupView
-            // expects its children to be views:
-            var responses =  order(cut(make(xmlDocument))),
-                view = new GroupView(id, responses);
-
-            // Stage 2:
-            // Use the list of responses to make a corresponding HTML
-            // expression, and make that the new content of the DOM element
-            // to which view is linked:
-            view.fill(html(responses));
-            // Stage 3:
-            // Go through the responses and transform them into views that
-            // point to DOM elements in the new content created in Stage 2.
-            each(responses, function (response) {
-                response.toView();
-            });
-            // Now view is a GroupView with children that are proper views.
-            return view;
-        }
-
         // Returns a list of responses based on xmlDocument.
         function make(xmlDocument) {
             return map(xmlDocument.getElementsByTagName("Response"),
@@ -1804,27 +1789,50 @@ CoSS.exprt = (function (my, window) {
             }, "");
         }
 
-        var helpListener = bind(function () {
+        function complex(key, dependents) {
+            return new ComplexView(key + "Item", key, group(key, dependents));
+        }
+
+        function group(key, dependents) {
+            return new GroupView(key + "Sublist",
+                map(dependents, function (dependent) {
+                    return simple(dependent);
+                }));
+        }
+
+        function simple(key) {
+            return new KeyView(key + "Item", key);
+        }
+
+        var responses = order(cut(make(xmlDocument))),
+            helpListener = bind(function () {
                 this.help.toggle();
             }, this);
 
-        View.call(this, id);
-        this.container = group(xmlDocument, "expertiseResponsesContainer");
-        this.summary = new Summary("expertiseResponsesSummary");
+        this.view = new View(id);
         this.searchNumber = new View("expertiseSearchNumber");
         this.matches = new View("expertiseResponsesMatches");
         this.help = new View("expertiseResponsesHelp");
+        this.summary = new GroupView("expertiseResponsesSummary");
+        each(toDependents, function (dependents, key) {
+            this.summary.child(complex(key, dependents));
+        }, this);
+        this.container = new GroupView("expertiseResponsesContainer");
+        this.container.fill(html(responses));
+        each(responses, function (response) {
+            this.container.child(new ResponseView(response));
+        }, this);
 
         each(toButtons.expertiseResponsesHelp, function (button) {
             listener(button, "click", helpListener);
         });
     }
 
-    Responses.prototype = new View();
+    extend(Responses.prototype, viewDecoratorMixin);
 
     Responses.prototype.hide = function () {
         this.help.hide();
-        return View.prototype.hide.call(this);
+        return this.view.hide();
     };
 
     Responses.prototype.populate = function (properties, priorSearches) {
