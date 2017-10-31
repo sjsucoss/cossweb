@@ -50,7 +50,7 @@ CoSS.exprt = (function (my, window) {
             Q9_1: "manuscriptPeerReviewBecomeReviewer",
             Q9_2: "manuscriptPeerReviewChooseJournal",
             Q9_3: "manuscriptPeerReviewBestPractices",
-            Q9_4: "manuscriptPeerReviewOther:",
+            Q9_4: "manuscriptPeerReviewOther",
             Q9_4_TEXT: "manuscriptPeerReviewOtherText",
 
             Q10_1: "opEdSelectingPublication",
@@ -60,7 +60,7 @@ CoSS.exprt = (function (my, window) {
 
             Q11_1: "bookReviewWriting",
             Q11_2: "bookReviewValue",
-            Q11_3: "bookReviewOther:",
+            Q11_3: "bookReviewOther",
             Q11_3_TEXT: "bookReviewOtherText",
 
             Q12_1: "journalEditorBecomeEditor",
@@ -87,7 +87,7 @@ CoSS.exprt = (function (my, window) {
             Q13_11: "quantMethodsStatsMultilevelModeling",
             Q13_12: "quantMethodsStatsComputationalModeling",
             Q13_13: "quantMethodsStatsAgentbasedModeling",
-            Q13_14: "quantMethodsStatsOtherText",
+            Q13_14: "quantMethodsStatsOther",
             Q13_14_TEXT: "quantMethodsStatsOtherText",
 
             Q14_1: "quantMethodsResearchContentAnalysis",
@@ -114,21 +114,21 @@ CoSS.exprt = (function (my, window) {
             Q15_13: "quantMethodsSoftwareOther",
             Q15_13_TEXT: "quantMethodsSoftwareOtherText",
 
-            Q16_1: "qualMethodsResearcArchival",
-            Q16_2: "qualMethodsResearcCaseStudies",
-            Q16_3: "qualMethodsResearcCommodityChain",
-            Q16_4: "qualMethodsResearcContentAnalysis",
-            Q16_5: "qualMethodsResearcEthnographic",
-            Q16_6: "qualMethodsResearcFocusGroups",
-            Q16_7: "qualMethodsResearcGaBiLifeCycleAssessment",
-            Q16_8: "qualMethodsResearcInterviewsInDepth",
-            Q16_9: "qualMethodsResearcInterviewsSemistructured",
-            Q16_10: "qualMethodsResearcNRELSystemsAdvisorModel",
-            Q16_11: "qualMethodsResearcOralHistory",
-            Q16_12: "qualMethodsResearcParticipantObservation",
-            Q16_13: "qualMethodsResearcPerformance",
-            Q16_14: "qualMethodsResearcRhetoricalAnalysis",
-            Q16_15: "qualMethodsResearcTextualAnalysis",
+            Q16_1: "qualMethodsResearchArchival",
+            Q16_2: "qualMethodsResearchCaseStudies",
+            Q16_3: "qualMethodsResearchCommodityChain",
+            Q16_4: "qualMethodsResearchContentAnalysis",
+            Q16_5: "qualMethodsResearchEthnographic",
+            Q16_6: "qualMethodsResearchFocusGroups",
+            Q16_7: "qualMethodsResearchGaBiLifeCycleAssessment",
+            Q16_8: "qualMethodsResearchInterviewsInDepth",
+            Q16_9: "qualMethodsResearchInterviewsSemistructured",
+            Q16_10: "qualMethodsResearchNRELSystemsAdvisorModel",
+            Q16_11: "qualMethodsResearchOralHistory",
+            Q16_12: "qualMethodsResearchParticipantObservation",
+            Q16_13: "qualMethodsResearchPerformance",
+            Q16_14: "qualMethodsResearchRhetoricalAnalysis",
+            Q16_15: "qualMethodsResearchTextualAnalysis",
             Q16_16: "qualMethodsResearchOther",
             Q16_16_TEXT: "qualMethodsResearchOtherText",
 
@@ -141,7 +141,6 @@ CoSS.exprt = (function (my, window) {
             Q17_7: "qualMethodsSoftwareOther",
             Q17_7_TEXT: "qualMethodsSoftwareOtherText",
 
-            Q18: "participatoryMethods",
             Q18_1: "participatoryMethodsCommunityBased",
             Q18_2: "participatoryMethodsParticipatoryMapping",
             Q18_3: "participatoryMethodsParticipatoryPlanning",
@@ -1085,7 +1084,7 @@ CoSS.exprt = (function (my, window) {
         return this;
     };
 
-    View.prototype.checked = function () {
+    View.prototype.getChecked = function () {
         return this.element.checked;
     };
 
@@ -1124,8 +1123,8 @@ CoSS.exprt = (function (my, window) {
             this.view.on(type, callback);
             return this;
         },
-        checked: function () {
-            return this.view.checked();
+        getChecked: function () {
+            return this.view.getChecked();
         },
         setChecked: function (value) {
             this.view.setChecked(value);
@@ -1232,7 +1231,7 @@ CoSS.exprt = (function (my, window) {
     Checkbox.prototype.properties = function () {
         var properties = {};
 
-        if (this.checked()) {
+        if (this.getChecked()) {
             properties[this.key] = 1;
         }
         return properties;
@@ -1249,7 +1248,7 @@ CoSS.exprt = (function (my, window) {
 
     extend(CheckboxGroup.prototype, viewDecoratorMixin);
 
-    CheckboxGroup.prototype.child = function (checkbox) {
+    CheckboxGroup.prototype.addChild = function (checkbox) {
         this.children.push(checkbox);
     };
 
@@ -1275,7 +1274,7 @@ CoSS.exprt = (function (my, window) {
         this.on("change", bind(function () {
             // Repopulate group only if this checkbox is unchecked.
             // I.e., the populate statement must be the second disjunct.
-            this.group.showIff(this.checked() ||
+            this.group.showIff(this.getChecked() ||
                 this.group.populate(alwaysTrue));
         }, this));
     }
@@ -1335,7 +1334,7 @@ CoSS.exprt = (function (my, window) {
         this.help = new View("expertiseMenuHelp");
         this.view = new CheckboxGroup(id);
         each(toDependents, function (dependents, key) {
-            this.view.child(complex(key, checkboxListener, dependents));
+            this.view.addChild(complex(key, checkboxListener, dependents));
         }, this);
 
         each(toButtons.expertiseClear, function (button) {
@@ -1414,7 +1413,7 @@ CoSS.exprt = (function (my, window) {
 
     extend(GroupView.prototype, viewDecoratorMixin);
 
-    GroupView.prototype.child = function (view) {
+    GroupView.prototype.addChild = function (view) {
         this.children.push(view);
     };
 
@@ -1815,12 +1814,12 @@ CoSS.exprt = (function (my, window) {
         this.help = new View("expertiseResponsesHelp");
         this.summary = new GroupView("expertiseResponsesSummary");
         each(toDependents, function (dependents, key) {
-            this.summary.child(complex(key, dependents));
+            this.summary.addChild(complex(key, dependents));
         }, this);
         this.container = new GroupView("expertiseResponsesContainer");
         this.container.fill(html(responses));
         each(responses, function (response) {
-            this.container.child(new ResponseView(response));
+            this.container.addChild(new ResponseView(response));
         }, this);
 
         each(toButtons.expertiseResponsesHelp, function (button) {
