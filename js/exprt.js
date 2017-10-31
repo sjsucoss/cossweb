@@ -768,6 +768,152 @@ CoSS.exprt = (function (my, window) {
         alwaysTrue = {share: 1},
         viewDecoratorMixin;
 
+
+    // var toKeysRange =
+    //         reduce(toKey, function (array, key) {
+    //             return array.concat([key]);
+    //         }, []),
+    //     toDependentsDomain =
+    //         reduce(toDependents, function (array, dependents, key) {
+    //             return array.concat([key]);
+    //         }, []),
+    //     toDependentsRangeFlattened =
+    //         reduce(toDependents, function (array, dependents) {
+    //             return array.concat(dependents);
+    //         }, []),
+    //     toDescriptionDomain =
+    //         reduce(toDescription, function (array, description, key) {
+    //             return array.concat([key]);
+    //         }, []),
+    //     toOtherTextDomain =
+    //         reduce(toOtherText, function (array, otherText, other) {
+    //             return array.concat([other]);
+    //         }, []),
+    //     toOtherTextRange =
+    //         reduce(toOtherText, function (array, otherText) {
+    //             return array.concat([otherText]);
+    //         }, []),
+    //     specialKeys =
+    //         [
+    //             "id",
+    //             "emailText",
+    //             "nameText",
+    //             "share",
+    //             "rank",
+    //             "rankText",
+    //             "department",
+    //             "departmentText"
+    //         ];
+
+
+    // function member(string1, array) {
+    //     return some(array, function (string2) {
+    //         return string1 === string2;
+    //     });
+    // }
+
+    // function setDiff(array1, array2) {
+    //     return filter(array1, function (string) {
+    //         return !member(string, array2);
+    //     });
+    // }
+
+    // function subset(array1, array2) {
+    //     return all(array1, function (string) {
+    //         return member(string, array2);
+    //     });
+    // }
+
+    // function setEqual(array1, array2) {
+    //     return subset(array1, array2) && subset(array2, array1);
+    // }
+
+    // function union(array1, array2) {
+    //     return array1.concat(array2);
+    // }
+
+    // function disjoint(array1, array2) {
+    //     return !some(array1, function (string) {
+    //         return member(string, array2);
+    //     });
+    // }
+
+
+    // console.log("Checking assumptions about keys in exprt.js -- " +
+    //     "any warnings follow:");
+
+
+    // if (!disjoint(specialKeys, toDependentsDomain)) {
+    //     console.log("Special keys and thematic keys not disjoint");
+    // }
+    // if (!disjoint(specialKeys, toDependentsRangeFlattened)) {
+    //     console.log("Special keys and dependents not disjoint");
+    // }
+    // if (!disjoint(specialKeys, toDescriptionDomain)) {
+    //     console.log("Special keys and range of toDescription not disjoint");
+    // }
+    // if (!disjoint(specialKeys, toOtherTextDomain)) {
+    //     console.log("Special keys and ...Other keys not disjoint");
+    // }
+    // if (!disjoint(specialKeys, toOtherTextRange)) {
+    //     console.log("Special keys and ...OtherText keys not disjoint");
+    // }
+
+
+    // if (!disjoint(toOtherTextRange, toDependentsDomain)) {
+    //     console.log("...OtherText keys and thematic keys not disjoint");
+    // }
+    // if (!disjoint(toOtherTextRange, toDependentsRangeFlattened)) {
+    //     console.log("...OtherText keys and dependents not disjoint");
+    // }
+    // if (!disjoint(toOtherTextRange, toDescriptionDomain)) {
+    //     console.log("...OtherText keys and " +
+    //         "domain of toDescription not disjoint");
+    // }
+    // if (!disjoint(toOtherTextRange, toOtherTextDomain)) {
+    //     console.log("...OtherText keys and ...Other keys not disjoint");
+    // }
+
+
+    // if (!disjoint(toOtherTextDomain, toDependentsDomain)) {
+    //     console.log("...OtherText keys and thematic keys not disjoint");
+    // }
+    // if (!disjoint(toOtherTextDomain, toDescriptionDomain)) {
+    //     console.log("...OtherText keys and ...Other keys not disjoint");
+    // }
+
+
+    // if (!disjoint(toDependentsRangeFlattened, toDependentsDomain)) {
+    //     console.log("Dependents and thematic keys not disjoint");
+    // }
+
+
+    // if (!disjoint(toDependentsDomain, toKeysRange)) {
+    //     console.log("Thematic keys and range of toKeys not disjoint");
+    // }
+
+
+    // if (!setEqual(toKeysRange, union(specialKeys,
+    //         union(toDependentsRangeFlattened, toOtherTextRange)))) {
+    //     console.log("Range of toKeys not equal to union " +
+    //         "of special keys, dependents, and ...OtherText keys");
+    // }
+
+
+    // if (!setEqual(toDescriptionDomain,
+    //         setDiff(union (toDependentsDomain, toDependentsRangeFlattened),
+    //             toOtherTextDomain))) {
+    //     console.log("The domain of toDescription not equal to union of " +
+    //         "thematic keys and dependents minus the domain of toOtherText");
+    // }
+
+
+    // if (!setEqual(toDependentsRangeFlattened,
+    //         setDiff(toKeysRange, union(specialKeys, toOtherTextRange)))) {
+    //     console.log("Dependents not equal to the range of toKeys minus " +
+    //         "the union of special keys and ...OtherText keys");
+    // }
+
     //==========================================================================
     //                               UTILITIES
     //==========================================================================
