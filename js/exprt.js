@@ -1156,7 +1156,7 @@ CoSS.exprt = (function (my, window) {
     /**
      * Shows all elements by removing the class "hide" from each. Returns this.
      */
-   Multiview.prototype.show = function () {
+    Multiview.prototype.show = function () {
         each(this.elements, function (element) {
             removeClass(element, "hide");
         });
