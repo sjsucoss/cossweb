@@ -1932,7 +1932,7 @@ CoSS.exprt = (function (my, window) {
     //==========================================================================
     //                              TESTING KEYS
     //==========================================================================
-/*
+
     var toKeysRange =
             reduce(toKey, function (array, key) {
                 return array.concat([key]);
@@ -1941,10 +1941,12 @@ CoSS.exprt = (function (my, window) {
             reduce(toDependents, function (array, dependents, key) {
                 return array.concat([key]);
             }, []),
+        thematicKeys = toDependentsDomain,
         toDependentsRangeFlattened =
             reduce(toDependents, function (array, dependents) {
                 return array.concat(dependents);
             }, []),
+        dependentKeys = toDependentsRangeFlattened,
         toDescriptionDomain =
             reduce(toDescription, function (array, description, key) {
                 return array.concat([key]);
@@ -1953,10 +1955,12 @@ CoSS.exprt = (function (my, window) {
             reduce(toOtherText, function (array, otherText, other) {
                 return array.concat([other]);
             }, []),
+        otherKeys = toOtherTextDomain,
         toOtherTextRange =
             reduce(toOtherText, function (array, otherText) {
                 return array.concat([otherText]);
             }, []),
+        otherTextKeys = toOtherTextRange,
         specialKeys =
             [
                 "id",
@@ -2005,47 +2009,46 @@ CoSS.exprt = (function (my, window) {
         });
     }
 
-    assert(disjoint(specialKeys, toDependentsDomain),
+    assert(disjoint(specialKeys, thematicKeys),
         "Special keys and thematic keys are disjoint");
 
-    assert(disjoint(specialKeys, toDependentsDomain),
+    assert(disjoint(specialKeys, thematicKeys),
         "Special keys and thematic keys are disjoint");
     
-    assert(disjoint(specialKeys, toDependentsRangeFlattened),
-        "Special keys and dependents are disjoint");
+    assert(disjoint(specialKeys, dependentKeys),
+        "Special keys and dependent keys are disjoint");
 
     assert(disjoint(specialKeys, toDescriptionDomain),
         "Special keys and range of toDescription are disjoint");
 
-    assert(disjoint(specialKeys, toOtherTextDomain),
+    assert(disjoint(specialKeys, otherKeys),
         "Special keys and ...Other keys are disjoint");
 
-    assert(disjoint(specialKeys, toOtherTextRange),
+    assert(disjoint(specialKeys, otherTextKeys),
         "Special keys and ...OtherText keys are disjoint");
 
-    assert(disjoint(toOtherTextRange, toDependentsDomain),
+    assert(disjoint(otherTextKeys, thematicKeys),
         "...OtherText keys and thematic keys are disjoint");
 
-    assert(disjoint(toOtherTextRange, toDependentsRangeFlattened),
-        "...OtherText keys and dependents are disjoint");
+    assert(disjoint(otherTextKeys, dependentKeys),
+        "...OtherText keys and dependent keys are disjoint");
 
-    assert(disjoint(toOtherTextRange, toDescriptionDomain),
-        "...OtherText keys and " +
-            "domain of toDescription are disjoint");
+    assert(disjoint(otherTextKeys, toDescriptionDomain),
+        "...OtherText keys and domain of toDescription are disjoint");
 
-    assert(disjoint(toOtherTextRange, toOtherTextDomain),
+    assert(disjoint(otherTextKeys, otherKeys),
         "...OtherText keys and ...Other keys are disjoint");
 
-    assert(disjoint(toOtherTextDomain, toDependentsDomain),
-        "...OtherText keys and thematic keys are disjoint");
+    assert(disjoint(otherKeys, thematicKeys),
+        "...Other keys and thematic keys are disjoint");
 
-    assert(disjoint(toOtherTextDomain, toDescriptionDomain),
-        "...OtherText keys and ...Other keys are disjoint");
+    assert(disjoint(otherKeys, toDescriptionDomain),
+        "...Other keys and the domain of toDescription are disjoint");
 
-    assert(disjoint(toDependentsRangeFlattened, toDependentsDomain),
-        "Dependents and thematic keys are disjoint");
+    assert(disjoint(dependentKeys, thematicKeys),
+        "Dependent keys and thematic keys are disjoint");
 
-    assert(disjoint(toDependentsDomain, toKeysRange),
+    assert(disjoint(thematicKeys, toKeysRange),
         "Thematic keys and range of toKeys are disjoint");
 
     assert(
@@ -2054,13 +2057,13 @@ CoSS.exprt = (function (my, window) {
             union(
                 specialKeys,
                 union(
-                    toDependentsRangeFlattened,
-                    toOtherTextRange
+                    dependentKeys,
+                    otherTextKeys
                 )
             )
         ),
         "Range of toKeys equal to union of special " +
-            "keys, dependents, and ...OtherText keys"
+            "keys, dependent keys, and ...OtherText keys"
     );
 
     assert(
@@ -2068,31 +2071,31 @@ CoSS.exprt = (function (my, window) {
             toDescriptionDomain,
             setDiff(
                 union (
-                    toDependentsDomain,
-                    toDependentsRangeFlattened
+                    thematicKeys,
+                    dependentKeys
                 ),
-                toOtherTextDomain
+                otherKeys
             )
         ),
         "The domain of toDescription equal to union of thematic " +
-            "keys and dependents minus the domain of toOtherText"
+            "keys and dependent keys minus ...Other keys"
     );
 
     assert(
         setEqual(
-            toDependentsRangeFlattened,
+            dependentKeys,
             setDiff(
                 toKeysRange,
                 union(
                     specialKeys,
-                    toOtherTextRange
+                    otherTextKeys
                 )
             )
         ),
-        "Dependents equal to the range of toKeys minus " +
+        "Dependent keys equal to the range of toKeys minus " +
             "the union of special keys and ...OtherText keys"
     );
-*/
+
     //==========================================================================
 
     return my;
