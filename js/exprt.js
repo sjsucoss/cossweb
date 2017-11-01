@@ -1831,7 +1831,8 @@ CoSS.exprt = (function (my, window) {
 
     Responses.prototype.hide = function () {
         this.help.hide();
-        return this.view.hide();
+        this.view.hide();
+        return this;
     };
 
     Responses.prototype.populate = function (properties, priorSearches) {
@@ -1932,7 +1933,7 @@ CoSS.exprt = (function (my, window) {
     //==========================================================================
     //                              TESTING KEYS
     //==========================================================================
-
+/*
     var toKeysRange =
             reduce(toKey, function (array, key) {
                 return array.concat([key]);
@@ -2077,8 +2078,8 @@ CoSS.exprt = (function (my, window) {
                 otherKeys
             )
         ),
-        "The domain of toDescription equal to union of thematic " +
-            "keys and dependent keys minus ...Other keys"
+        "The domain of toDescription equal to union of " +
+            "thematic keys and dependent keys minus ...Other keys"
     );
 
     assert(
@@ -2092,10 +2093,10 @@ CoSS.exprt = (function (my, window) {
                 )
             )
         ),
-        "Dependent keys equal to the range of toKeys minus " +
-            "the union of special keys and ...OtherText keys"
+        "Dependent keys equal to the range of toKeys " +
+            "minus the union of special keys and ...OtherText keys"
     );
-
+*/
     //==========================================================================
 
     return my;
