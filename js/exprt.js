@@ -1349,7 +1349,8 @@ CoSS.exprt = (function (my, window) {
 
     Menu.prototype.hide = function () {
         this.help.hide();
-        return this.view.hide();
+        this.view.hide();
+        return this;
     };
 
     Menu.prototype.populate = function (properties) {
